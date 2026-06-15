@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: parkin_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: parkin_bd
+      MYSQL_USER: parkin_user
+      MYSQL_PASSWORD: parkin_password
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - parkin_network
+
+volumes:
+  mysql_data:
+
+networks:
+  parkin_network:
+    driver: bridge
