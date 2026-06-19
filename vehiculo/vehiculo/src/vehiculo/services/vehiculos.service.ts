@@ -40,6 +40,14 @@ export class VehiculosService {
         return vehiculo;
     }
 
+    async findByPlaca(placa: string): Promise<Vehiculo> {
+        const vehiculo = await this.repositoryVehiculo.findOne({ where: { placa } });
+        if (!vehiculo) {
+            throw new Error(`No se encontró un vehículo con la placa ${placa}`);
+        }
+        return vehiculo;
+    }
+
     async update(id: string, updateVehiculoDto: UpdateVehiculoDto): Promise<Vehiculo> {
         const vehiculo = await this.findOne(id);
         Object.assign(vehiculo, updateVehiculoDto);

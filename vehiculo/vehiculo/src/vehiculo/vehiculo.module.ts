@@ -6,11 +6,12 @@ import { Vehiculo } from './entities/vehiculo.entity';
 import { Auto } from './entities/auto.entity';
 import { Motocicleta } from './entities/motocicleta.entity';
 import { Camioneta } from './entities/camioneta.entity';
+import { RolesGuard } from '../auth/roles.guard';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Vehiculo, Auto, Motocicleta, Camioneta])],
   controllers: [VehiculoController],
-  providers: [VehiculosService],
+  providers: [VehiculosService, RolesGuard],
   exports: [VehiculosService],
 })
 export class VehiculosModule {}

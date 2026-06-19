@@ -1,6 +1,7 @@
 package ec.edu.espe.usuarios.services;
 
 import ec.edu.espe.usuarios.dto.request.UserCreateRequest;
+import ec.edu.espe.usuarios.dto.response.PersonResponse;
 import ec.edu.espe.usuarios.dto.response.UserResponse;
 import ec.edu.espe.usuarios.entity.User;
 
@@ -15,4 +16,6 @@ public interface UserService {
     UserResponse getUserById(UUID id);
 
     UserResponse assigneRole(UUID userId, UUID roleId);
+
+    PersonResponse getPersonByDni(String dni);
 }

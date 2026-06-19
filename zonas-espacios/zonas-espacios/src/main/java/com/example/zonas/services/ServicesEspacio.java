@@ -144,6 +144,24 @@ public class ServicesEspacio implements EspacioService {
         return String.format("%s-%03d", zona.getCodigo(), numero);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public EspacioResponseDto obtenerEspacioPorId(UUID id) {
+        Espacio espacio = espacioRepositorio.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Espacio no encontrado: " + id));
+        return mapper.toEspacioResponseDto(espacio);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EspacioResponseDto> obtenerEspaciosDisponiblesPorNombreZona(String nombreZona) {
+        List<Zona> zonas = zonaRepositorio.findByNombreContainingIgnoreCase(nombreZona);
+        return zonas.stream()
+                .flatMap(zona -> espacioRepositorio.findByZonaIdAndEstado(zona.getId(), EstadoEspacio.DISPONIBLE).stream())
+                .map(mapper::toEspacioResponseDto)
+                .collect(Collectors.toList());
+    }
+
     private EstadoEspacio parseEstado(String estado) {
         try {
             return EstadoEspacio.valueOf(estado.trim().toUpperCase());

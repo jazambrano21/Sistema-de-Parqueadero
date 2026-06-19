@@ -89,6 +89,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PersonResponse getPersonByDni(String dni) {
+        Person person = personRepository.findByDni(dni)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Persona no encontrada con DNI: " + dni));
+        return mapToPersonResponse(person);
+    }
+
+    @Override
     @Transactional
     public UserResponse assigneRole(UUID userId, UUID roleId) {
         User user = userRepository.findById(userId)

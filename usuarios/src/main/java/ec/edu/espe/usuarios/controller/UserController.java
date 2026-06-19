@@ -2,6 +2,7 @@ package ec.edu.espe.usuarios.controller;
 
 
 import ec.edu.espe.usuarios.dto.request.UserCreateRequest;
+import ec.edu.espe.usuarios.dto.response.PersonResponse;
 import ec.edu.espe.usuarios.dto.response.UserResponse;
 import ec.edu.espe.usuarios.services.UserService;
 import jakarta.validation.Valid;
@@ -23,6 +24,11 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getUsers());
+    }
+
+    @GetMapping("/dni/{dni}")
+    public ResponseEntity<PersonResponse> getPersonByDni(@PathVariable String dni) {
+        return ResponseEntity.ok(userService.getPersonByDni(dni));
     }
 
     @PostMapping

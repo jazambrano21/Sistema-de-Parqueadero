@@ -25,6 +25,11 @@ public class EspacioController {
         return ResponseEntity.ok(espacioService.obtenerEspacios());
     }
 
+    @GetMapping("/disponibles")
+    public ResponseEntity<List<EspacioResponseDto>> obtenerDisponiblesPorZona(@RequestParam String zona) {
+        return ResponseEntity.ok(espacioService.obtenerEspaciosDisponiblesPorNombreZona(zona));
+    }
+
     @GetMapping("/estado/{estado}")
     public ResponseEntity<List<EspacioResponseDto>> obtenerPorEstado(@PathVariable String estado) {
         return ResponseEntity.ok(espacioService.obtenerEspaciosPorEstado(estado));
@@ -39,6 +44,11 @@ public class EspacioController {
     public ResponseEntity<List<EspacioResponseDto>> obtenerPorZonaYEstado(@PathVariable UUID idZona,
                                                                         @PathVariable String estado) {
         return ResponseEntity.ok(espacioService.obtenerEspaciosPorZonaEstado(idZona, estado));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<EspacioResponseDto> obtenerEspacioPorId(@PathVariable UUID id) {
+        return ResponseEntity.ok(espacioService.obtenerEspacioPorId(id));
     }
 
     @PostMapping

@@ -27,7 +27,7 @@ public class Espacio {
     @Column(nullable = false, length = 12)
     private String codigo; //ZON-VIP-01, ZON-VIP-02, ZON-VIP-03
 
-    @Column(nullable = false, length = 12)
+    @Column(nullable = false, length = 20)
     private String nombre; //ZON-VIP-01-001, ZON-VIP-01-002, ZON-VIP-01-003
 
     @Column

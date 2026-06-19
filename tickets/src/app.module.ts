@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TicketsModule } from './tickets/tickets.module';
 import { Ticket } from './tickets/entities/ticket.entity';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -17,11 +18,12 @@ import { Ticket } from './tickets/entities/ticket.entity';
         password: configService.get('DB_CONTRASENA'),
         database: configService.get('DB_NOMBRE'),
         entities: [Ticket],
-        synchronize: true, // solo desarrollo
+        synchronize: true,
         logging: true,
       }),
       inject: [ConfigService],
     }),
+    AuthModule,
     TicketsModule,
   ],
 })

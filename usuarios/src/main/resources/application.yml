@@ -14,7 +14,17 @@ spring:
             dialect: org.hibernate.dialect.PostgreSQLDialect
             format_sql: true
 
-
     sql:
         init:
             mode: always
+
+    security:
+        oauth2:
+            resourceserver:
+                jwt:
+                    jwk-set-uri: http://localhost:9000/oauth2/jwks
+
+# URL del servidor OAuth para solicitar tokens firmados
+oauth:
+    server:
+        url: http://localhost:9000

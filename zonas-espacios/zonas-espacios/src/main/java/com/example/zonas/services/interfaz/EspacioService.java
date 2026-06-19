@@ -25,4 +25,8 @@ public interface EspacioService {
 
     List<EspacioResponseDto> obtenerEspaciosPorZonaEstado(UUID idZona, String estado);
 
+    EspacioResponseDto obtenerEspacioPorId(UUID id);
+
+    List<EspacioResponseDto> obtenerEspaciosDisponiblesPorNombreZona(String nombreZona);
+
 }

@@ -130,7 +130,7 @@ export class TicketsService {
 
   private async validarPlaca(placa: string): Promise<Vehiculo | null> {
     try {
-      const url = `${this.vehiculoUrl}/${placa}`;
+      const url = `${this.vehiculoUrl}/placa/${placa}`;
       const vehiculo = await this.httpClient.get<Vehiculo>(url);
       return vehiculo;
     } catch (error) {

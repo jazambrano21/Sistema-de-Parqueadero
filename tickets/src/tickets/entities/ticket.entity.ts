@@ -21,7 +21,7 @@ export class Ticket {
     @Column({ type: 'timestamp' })
     fechaHoraIngreso!: Date;
 
-    @Column({ type: 'timestamp' })
+    @Column({ type: 'timestamp', nullable: true })
     fechaHoraSalida!: Date;
 
     @Column({default: true})
