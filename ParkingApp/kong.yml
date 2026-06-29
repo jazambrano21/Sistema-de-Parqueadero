@@ -1,0 +1,71 @@
+_format_version: "3.0"
+
+services:
+  # Microservicio de Usuarios con OAuth
+  - name: usuarios-service
+    url: http://ms-usuarios-roles-oauth:8082
+    routes:
+      - name: usuarios-route
+        paths:
+          - /api/users
+          - /api/roles
+          - /api/auth
+        strip_path: false
+
+  # Microservicio de Zonas y Espacios
+  - name: zonas-espacios-service
+    url: http://ms-zonas-espacios:8081
+    routes:
+      - name: zonas-route
+        paths:
+          - /api/zonas
+          - /api/espacios
+        strip_path: false
+
+  # Microservicio de Vehículos
+  - name: vehiculos-service
+    url: http://ms-vehiculos:3000
+    routes:
+      - name: vehiculos-route
+        paths:
+          - /vehiculo
+        strip_path: false
+
+  # Microservicio de Tickets
+  - name: tickets-service
+    url: http://ms-tickets:3001
+    routes:
+      - name: tickets-route
+        paths:
+          - /tickets
+        strip_path: false
+
+plugins:
+  # JWT Authentication Plugin
+  - name: jwt
+    config:
+      claims_to_verify:
+        - roles
+
+  # CORS Plugin
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - Authorization
+      exposed_headers:
+        - X-Total-Count
+      max_age: 3600
