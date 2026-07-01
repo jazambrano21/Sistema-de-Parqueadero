@@ -1,0 +1,23 @@
+name: Notificacion Telegram
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+      - test
+
+jobs:
+  telegram-notification:
+    name: Enviar mensaje a Telegram
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Enviar notificacion a Telegram
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="✅ Push realizado en Sistema-de-Parqueadero. Rama: ${{ github.ref_name }}. Commit: ${{ github.sha }}"
