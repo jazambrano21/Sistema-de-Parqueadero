@@ -17,7 +17,7 @@ jobs:
     name: Test y Sonar - Microservicios Java
     strategy:
       matrix:
-        module: [oauth, ms-zonas-espacios, ms-usuarios-roles-auth, ms-vehiculos, ms-tickets]
+        module: [ms-usuarios-roles-oauth, ms-zonas-espacios]
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -40,10 +40,34 @@ jobs:
           restore-keys: ${{ runner.os }}-maven-
 
       - name: Test y analisis Sonar
-        working-directory: App/${{ matrix.module }}
+        working-directory: ParkingApp/App/${{ matrix.module }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+
+  sonar-nestjs:
+    name: Test y Sonar - Microservicios NestJS
+    strategy:
+      matrix:
+        module: [ms-tickets, ms-vehiculos]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias y correr tests
+        working-directory: ParkingApp/App/${{ matrix.module }}
+        run: |
+          npm ci
+          npm run test -- --coverage
 
   sonar-frontend:
     name: Test y Sonar - Frontend
@@ -60,7 +84,7 @@ jobs:
           node-version: '20'
 
       - name: Instalar dependencias y correr tests
-        working-directory: Frontend
+        working-directory: ParkingApp/Frontend
         run: |
           npm ci
           npm test -- --coverage
@@ -68,21 +92,21 @@ jobs:
       - name: Analisis SonarCloud
         uses: SonarSource/sonarcloud-github-action@master
         with:
-          projectBaseDir: Frontend
+          projectBaseDir: ParkingApp/Frontend
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   telegram-notification:
     name: Enviar mensaje a Telegram
-    needs: [sonar-java, sonar-frontend]
+    needs: [sonar-java, sonar-nestjs, sonar-frontend]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Determinar resultado
         id: resultado
         run: |
-          if [ "${{ needs.sonar-java.result }}" == "success" ] && [ "${{ needs.sonar-frontend.result }}" == "success" ]; then
+          if [ "${{ needs.sonar-java.result }}" == "success" ] && [ "${{ needs.sonar-nestjs.result }}" == "success" ] && [ "${{ needs.sonar-frontend.result }}" == "success" ]; then
             echo "estado=✅ Tests y analisis Sonar OK" >> $GITHUB_OUTPUT
           else
             echo "estado=❌ Fallaron los tests o el analisis Sonar" >> $GITHUB_OUTPUT
