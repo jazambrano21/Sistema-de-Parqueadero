@@ -66,7 +66,7 @@ jobs:
       - name: Instalar dependencias y correr tests
         working-directory: ParkingApp/App/${{ matrix.module }}
         run: |
-          npm ci
+          npm install
           npm run test -- --coverage
 
   sonar-frontend:
@@ -86,7 +86,7 @@ jobs:
       - name: Instalar dependencias y correr tests
         working-directory: ParkingApp/Frontend
         run: |
-          npm ci
+          npm install
           npm test -- --coverage
 
       - name: Analisis SonarCloud
