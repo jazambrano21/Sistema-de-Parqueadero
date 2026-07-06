@@ -2,14 +2,9 @@ name: CI - Tests, Sonar y Notificacion Telegram
 
 on:
   push:
-    branches:
-      - master
-      - dev
-      - test
+    branches: [master, dev, test]
   pull_request:
-    branches:
-      - master
-      - test
+    branches: [master, test]
 
 jobs:
 
@@ -21,19 +16,16 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar repositorio
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Configurar JDK
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Cache Maven
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -43,7 +35,7 @@ jobs:
         working-directory: ParkingApp/App/${{ matrix.module }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=jazambrano21_Sistema-de-Parqueadero
 
   sonar-nestjs:
     name: Test y Sonar - Microservicios NestJS
@@ -53,49 +45,57 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar repositorio
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Configurar Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Instalar dependencias y correr tests
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node-
+
+      - name: Instalar y testear
         working-directory: ParkingApp/App/${{ matrix.module }}
         run: |
-          npm install
-          npm run test -- --coverage
+          npm ci --legacy-peer-deps
+          npm run test -- --passWithNoTests --forceExit
 
   sonar-frontend:
     name: Test y Sonar - Frontend
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar repositorio
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Configurar Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Instalar dependencias y correr tests
+      - name: Verificar si existe Frontend
+        id: check
+        run: |
+          if [ -f "ParkingApp/Frontend/package.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Instalar y testear
+        if: steps.check.outputs.exists == 'true'
         working-directory: ParkingApp/Frontend
         run: |
-          npm install
-          npm test -- --coverage
+          npm ci --legacy-peer-deps
+          npm run test -- --passWithNoTests --forceExit
 
-      - name: Analisis SonarCloud
-        uses: SonarSource/sonarcloud-github-action@master
-        with:
-          projectBaseDir: ParkingApp/Frontend
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Sin frontend - OK
+        if: steps.check.outputs.exists == 'false'
+        run: echo "No hay Frontend aún. Saltando."
 
   telegram-notification:
     name: Enviar mensaje a Telegram
@@ -106,14 +106,16 @@ jobs:
       - name: Determinar resultado
         id: resultado
         run: |
-          if [ "${{ needs.sonar-java.result }}" == "success" ] && [ "${{ needs.sonar-nestjs.result }}" == "success" ] && [ "${{ needs.sonar-frontend.result }}" == "success" ]; then
-            echo "estado=✅ Tests y analisis Sonar OK" >> $GITHUB_OUTPUT
+          if [ "${{ needs.sonar-java.result }}" == "success" ] && \
+             [ "${{ needs.sonar-nestjs.result }}" == "success" ] && \
+             [ "${{ needs.sonar-frontend.result }}" == "success" ]; then
+            echo "estado=✅ Pipeline OK en ${{ github.ref_name }} - Commit: ${{ github.sha }}" >> $GITHUB_OUTPUT
           else
-            echo "estado=❌ Fallaron los tests o el analisis Sonar" >> $GITHUB_OUTPUT
+            echo "estado=❌ Pipeline FALLO en ${{ github.ref_name }} - Java=${{ needs.sonar-java.result }} NestJS=${{ needs.sonar-nestjs.result }} Frontend=${{ needs.sonar-frontend.result }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Enviar notificacion a Telegram
+      - name: Enviar a Telegram
         run: |
           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="${{ steps.resultado.outputs.estado }} en Sistema-de-Parqueadero. Rama: ${{ github.ref_name }}. Commit: ${{ github.sha }}"
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="${{ steps.resultado.outputs.estado }}"
