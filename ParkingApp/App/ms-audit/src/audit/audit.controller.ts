@@ -19,7 +19,7 @@ export class AuditController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.auditService.findOne(+id);
+    return this.auditService.findOne(id);
   }
 
   @Patch(':id')

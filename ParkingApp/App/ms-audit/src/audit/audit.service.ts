@@ -22,19 +22,19 @@ export class AuditService {
     return this.auditRepo.save(newEvent);
   }
 
-  findAll() {
-    return `This action returns all audit`;
+  async findAll() {
+    return this.auditRepo.find({ order: { timestamp: 'DESC' } });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} audit`;
+  async findOne(id: string) {
+    return this.auditRepo.findOne({ where: { id } });
   }
 
-  update(id: number, updateAuditDto: UpdateAuditDto) {
+  async update(id: number, updateAuditDto: UpdateAuditDto) {
     return `This action updates a #${id} audit`;
   }
 
-  remove(id: number) {
+  async remove(id: number) {
     return `This action removes a #${id} audit`;
   }
 }

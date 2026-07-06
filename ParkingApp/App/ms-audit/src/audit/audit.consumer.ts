@@ -6,15 +6,23 @@ import { plainToClass } from 'class-transformer';
 import { CreateAuditEventDto } from './dto/create-audit-event.dto';
 import { validate, ValidationError } from 'class-validator';
 
+export function getRabbitRoutingPattern(routingKey?: string): string {
+  if (!routingKey || routingKey.trim() === '') {
+    return 'audit.#';
+  }
+
+  return routingKey;
+}
+
 @Injectable()
 export class AuditConsumer implements OnModuleInit {
   private readonly logger = new Logger(AuditConsumer.name);
-  private connection: any;
-  private channel: any;
+  private connection: any = null;
+  private channel: any = null;
 
   constructor(
-    private configService: ConfigService,
-    private auditService: AuditService,
+    private readonly configService: ConfigService,
+    private readonly auditService: AuditService,
   ) {}
 
   async onModuleInit() {
@@ -32,12 +40,12 @@ export class AuditConsumer implements OnModuleInit {
     try {
       this.connection = await amqp.connect(url);
       this.channel = await this.connection.createChannel();
-      this.logger.log(`Connected to RabbitMQ at ${url}`);
+      this.logger.log(`Conectado a RabbitMQ en ${host}:${port}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Error desconocido';
-      this.logger.error(`Failed to connect to RabbitMQ: ${errorMessage}`);
-      setTimeout(() => this.connect(), 5000); // Retry after 5 seconds
+      this.logger.error(`No se pudo conectar a RabbitMQ: ${errorMessage}`);
+      setTimeout(() => this.connect(), 5000);
     }
   }
 
@@ -45,8 +53,14 @@ export class AuditConsumer implements OnModuleInit {
     const queue = this.configService.get('RABBITMQ_QUEUE') || 'audit-queue';
     const exchange =
       this.configService.get('RABBITMQ_EXCHANGE') || 'audit-exchange';
-    const routingKey =
-      this.configService.get('RABBITMQ_ROUTING_KEY') || 'audit.*';
+    const routingKey = getRabbitRoutingPattern(
+      this.configService.get<string>('RABBITMQ_ROUTING_KEY'),
+    );
+
+    if (!this.channel) {
+      this.logger.warn('No hay canal de RabbitMQ disponible, se reintentará más tarde');
+      return;
+    }
 
     try {
       await this.channel.assertExchange(exchange, 'topic', { durable: true });
@@ -56,38 +70,35 @@ export class AuditConsumer implements OnModuleInit {
       this.channel.consume(
         queue,
         async (msg) => {
-          if (msg) {
-            const content = msg.content.toString();
-            this.logger.debug(`Mensaje recibido: ${content}`);
-            try {
-              const raw = JSON.parse(content);
-              const dto = plainToClass(CreateAuditEventDto, raw);
-              const errors = await validate(dto);
+          if (!msg) {
+            return;
+          }
 
-              // Verificar que errors sea un arreglo y tenga elementos
-              if (Array.isArray(errors) && errors.length > 0) {
-                const errorMessages = errors.map((e: ValidationError) =>
-                  Object.values(e.constraints || {}).join(', '),
-                );
-                this.logger.warn(
-                  `DTO inválido: ${errorMessages.join('; ')}`,
-                );
-                // Rechazar el mensaje y no reencolar (para evitar bucles)
-                this.channel.nack(msg, false, false);
-                return;
-              }
+          const content = msg.content.toString();
+          this.logger.log(`Mensaje recibido: ${content}`);
 
-              // Guardar el evento de auditoría
-              await this.auditService.create(dto);
-              this.logger.debug('Evento de auditoría guardado exitosamente');
-              this.channel.ack(msg);
-            } catch (err) {
-              const errorMessage =
-                err instanceof Error ? err.message : 'Error desconocido';
-              this.logger.error(`Error procesando mensaje: ${errorMessage}`);
-              // Rechazar el mensaje y no reencolar
-              this.channel.nack(msg, false, false);
+          try {
+            const raw = JSON.parse(content);
+            const dto = plainToClass(CreateAuditEventDto, raw);
+            const errors = await validate(dto);
+
+            if (Array.isArray(errors) && errors.length > 0) {
+              const errorMessages = errors.map((e: ValidationError) =>
+                Object.values(e.constraints || {}).join(', '),
+              );
+              this.logger.warn(`DTO inválido: ${errorMessages.join('; ')}`);
+              this.channel?.nack(msg, false, false);
+              return;
             }
+
+            await this.auditService.create(dto);
+            this.logger.log('Evento de auditoría guardado exitosamente');
+            this.channel?.ack(msg);
+          } catch (err) {
+            const errorMessage =
+              err instanceof Error ? err.message : 'Error desconocido';
+            this.logger.error(`Error procesando mensaje: ${errorMessage}`);
+            this.channel?.nack(msg, false, false);
           }
         },
         { noAck: false },
