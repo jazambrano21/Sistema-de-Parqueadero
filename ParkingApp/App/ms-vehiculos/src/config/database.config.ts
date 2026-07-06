@@ -9,7 +9,7 @@ export const databaseConfig: TypeOrmModuleOptions = {
   host: process.env.DB_HOST ?? 'localhost',
   port: parseInt(process.env.DB_PORT ?? '5432', 10),
   username: process.env.DB_USUARIO ?? 'postgres',
-  password: process.env.DB_CONTRASENA ?? '',
+  password: process.env.DB_CONTRASENA ?? '123',
   database: process.env.DB_NOMBRE ?? 'vehiculos_db',
   entities: [Vehiculo, Auto, Motocicleta, Camioneta],
   synchronize: true, // Solo desarrollo
