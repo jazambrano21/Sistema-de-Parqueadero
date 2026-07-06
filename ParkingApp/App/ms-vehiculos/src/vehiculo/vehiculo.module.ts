@@ -7,11 +7,12 @@ import { Auto } from './entities/auto.entity';
 import { Motocicleta } from './entities/motocicleta.entity';
 import { Camioneta } from './entities/camioneta.entity';
 import { RolesGuard } from '../auth/roles.guard';
+import { EventPublisherService } from '../common/event-publisher.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Vehiculo, Auto, Motocicleta, Camioneta])],
   controllers: [VehiculoController],
-  providers: [VehiculosService, RolesGuard],
+  providers: [VehiculosService, RolesGuard, EventPublisherService],
   exports: [VehiculosService],
 })
 export class VehiculosModule {}

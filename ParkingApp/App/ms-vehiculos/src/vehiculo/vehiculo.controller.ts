@@ -1,11 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { VehiculosService } from './services/vehiculos.service';
 import { CreateVehiculoDto } from './dto/create-vehiculo.dto';
 import { UpdateVehiculoDto } from './dto/update-vehiculo.dto';
-import { JwtAuthGuard } from '../auth/jwt.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
 
 /**
  * Todos los endpoints de vehículos requieren ROLE_ADMIN.
@@ -27,8 +25,8 @@ export class VehiculoController {
   @ApiResponse({ status: 400, description: 'Datos de entrada inválidos.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'Requiere ROLE_ADMIN.' })
-  create(@Body() createVehiculoDto: CreateVehiculoDto) {
-    return this.vehiculoService.create(createVehiculoDto);
+  create(@Body() createVehiculoDto: CreateVehiculoDto, @Req() req: Request) {
+    return this.vehiculoService.create(createVehiculoDto, req);
   }
 
   @Get()
