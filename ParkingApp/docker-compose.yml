@@ -6,8 +6,8 @@ services:
     image: postgres:15
     container_name: parking-postgres
     environment:
-      POSTGRES_USER: postgrest
-      POSTGRES_PASSWORD: qwerty12
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
       POSTGRES_DB: parking_db
     ports:
       - "5432:5432"
@@ -16,31 +16,31 @@ services:
     networks:
       - parking-network
 
-  # Kong API Gateway
-  kong:
-    image: kong/kong-gateway:3.4.0
-    container_name: parking-kong
-    environment:
-      KONG_DATABASE: "off"
-      KONG_PROXY_ACCESS_LOG: /dev/stdout
-      KONG_ADMIN_ACCESS_LOG: /dev/stdout
-      KONG_PROXY_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_LISTEN: 0.0.0.0:8001
-    ports:
-      - "8000:8000"
-      - "8443:8443"
-      - "8001:8001"
-      - "8444:8444"
-    volumes:
-      - ./kong.yml:/usr/local/kong/declarative/kong.yml
-    networks:
-      - parking-network
-    depends_on:
-      - ms-usuarios-roles-oauth
-      - ms-zonas-espacios
-      - ms-vehiculos
-      - ms-tickets
+  # Kong API Gateway (NO IMPLEMENTADO AÚN)
+  # kong:
+  #   image: kong:3.3-alpine
+  #   container_name: parking-kong
+  #   environment:
+  #     KONG_DATABASE: "off"
+  #     KONG_PROXY_ACCESS_LOG: /dev/stdout
+  #     KONG_ADMIN_ACCESS_LOG: /dev/stdout
+  #     KONG_PROXY_ERROR_LOG: /dev/stderr
+  #     KONG_ADMIN_ERROR_LOG: /dev/stderr
+  #     KONG_ADMIN_LISTEN: 0.0.0.0:8001
+  #   ports:
+  #     - "8000:8000"
+  #     - "8443:8443"
+  #     - "8001:8001"
+  #     - "8444:8444"
+  #   volumes:
+  #     - ./kong.yml:/usr/local/kong/declarative/kong.yml
+  #   networks:
+  #     - parking-network
+  #   depends_on:
+  #     - ms-usuarios-roles-oauth
+  #     - ms-zonas-espacios
+  #     - ms-vehiculos
+  #     - ms-tickets
 
   # Microservicio de Usuarios con OAuth
   ms-usuarios-roles-oauth:
@@ -52,8 +52,8 @@ services:
       - "8082:8082"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/usuarios_db
-      SPRING_DATASOURCE_USERNAME: postgrest
-      SPRING_DATASOURCE_PASSWORD: qwerty12
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 12345678
     networks:
       - parking-network
     depends_on:
@@ -69,8 +69,8 @@ services:
       - "8081:8081"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/zonas_db
-      SPRING_DATASOURCE_USERNAME: postgrest
-      SPRING_DATASOURCE_PASSWORD: qwerty12
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 12345678
     networks:
       - parking-network
     depends_on:
@@ -87,8 +87,8 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USERNAME: postgrest
-      DB_PASSWORD: qwerty12
+      DB_USERNAME: postgres
+      DB_PASSWORD: 12345678
       DB_DATABASE: vehiculos_db
     networks:
       - parking-network
@@ -106,8 +106,8 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USERNAME: postgrest
-      DB_PASSWORD: qwerty12
+      DB_USERNAME: postgres
+      DB_PASSWORD: 12345678
       DB_DATABASE: tickets_db
       PERSONAS_URL: http://ms-usuarios-roles-oauth:8082
       VEHICULOS_URL: http://ms-vehiculos:3000
@@ -116,9 +116,6 @@ services:
       - parking-network
     depends_on:
       - postgres
-      - ms-usuarios-roles-oauth
-      - ms-vehiculos
-      - ms-zonas-espacios
 
 networks:
   parking-network:
