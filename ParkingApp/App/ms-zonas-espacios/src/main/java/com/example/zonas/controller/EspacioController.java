@@ -1,9 +1,11 @@
 package com.example.zonas.controller;
 
+import com.example.zonas.audit.AuditEventPublisher;
 import com.example.zonas.dto.request.EspacioRequestDto;
 import com.example.zonas.dto.response.EspacioResponseDto;
 import com.example.zonas.entidades.EstadoEspacio;
 import com.example.zonas.services.interfaz.EspacioService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -11,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -19,6 +22,7 @@ import java.util.UUID;
 public class EspacioController {
 
     private final EspacioService espacioService;
+    private final AuditEventPublisher auditEventPublisher;
 
     @GetMapping
     public ResponseEntity<List<EspacioResponseDto>> listarEspacios() {
@@ -52,25 +56,48 @@ public class EspacioController {
     }
 
     @PostMapping
-    public ResponseEntity<EspacioResponseDto> crearEspacio(@Valid @RequestBody EspacioRequestDto requestDto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(espacioService.crearEspacio(requestDto));
+    public ResponseEntity<EspacioResponseDto> crearEspacio(@Valid @RequestBody EspacioRequestDto requestDto,
+                                                            HttpServletRequest request) {
+        EspacioResponseDto response = espacioService.crearEspacio(requestDto);
+        auditEventPublisher.publish(request, "ESPACIO", "CREATE", Map.of(
+                "id", response.getId(),
+                "nombre", response.getNombre(),
+                "zonaId", response.getIdZona()
+        ), "audit.espacio.create");
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<EspacioResponseDto> actualizarEspacio(@PathVariable UUID id,
-                                                               @Valid @RequestBody EspacioRequestDto requestDto) {
-        return ResponseEntity.ok(espacioService.actualizarEspacio(id, requestDto));
+                                                               @Valid @RequestBody EspacioRequestDto requestDto,
+                                                               HttpServletRequest request) {
+        EspacioResponseDto response = espacioService.actualizarEspacio(id, requestDto);
+        auditEventPublisher.publish(request, "ESPACIO", "UPDATE", Map.of(
+                "id", response.getId(),
+                "nombre", response.getNombre(),
+                "zonaId", response.getIdZona(),
+                "estado", response.getEstado()
+        ), "audit.espacio.update");
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarEspacio(@PathVariable UUID id) {
+    public ResponseEntity<Void> eliminarEspacio(@PathVariable UUID id,
+                                                HttpServletRequest request) {
+        auditEventPublisher.publish(request, "ESPACIO", "DELETE", Map.of("id", id.toString()), "audit.espacio.delete");
         espacioService.eliminarEspacio(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/estado")
     public ResponseEntity<EspacioResponseDto> cambiarEstado(@PathVariable UUID id,
-                                                            @RequestParam EstadoEspacio estado) {
-        return ResponseEntity.ok(espacioService.cambiarEstado(id, estado));
+                                                            @RequestParam EstadoEspacio estado,
+                                                            HttpServletRequest request) {
+        EspacioResponseDto response = espacioService.cambiarEstado(id, estado);
+        auditEventPublisher.publish(request, "ESPACIO", "UPDATE", Map.of(
+                "id", response.getId(),
+                "estado", response.getEstado()
+        ), "audit.espacio.update");
+        return ResponseEntity.ok(response);
     }
 }
