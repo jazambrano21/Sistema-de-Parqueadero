@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // ── Swagger 
+  //Swagger 
   const config = new DocumentBuilder()
     .setTitle('Vehiculo API - Sistema Parqueadero')
     .setDescription('Gestión de vehículos del parqueadero')
