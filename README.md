@@ -425,3 +425,6 @@
  - Zonas y espacios representan la disponibilidad fisica.
  - Tickets controlan la entrada, permanencia y salida.
  - Auditoria registra eventos relevantes para trazabilidad.
+
+
+prueba para la rama 
