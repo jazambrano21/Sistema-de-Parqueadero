@@ -1,27 +1,33 @@
+import * as crypto from 'crypto';
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TicketsModule } from './tickets/tickets.module';
 import { Ticket } from './tickets/entities/ticket.entity';
 import { AuthModule } from './auth/auth.module';
+
+const databaseHost = process.env.DB_HOST ?? 'localhost';
+const databasePort = parseInt(process.env.DB_PORT ?? '5432', 10);
+const databaseUser = process.env.DB_USUARIO ?? process.env.DB_USERNAME ?? 'postgres';
+const databasePassword = process.env.DB_CONTRASENA ?? process.env.DB_PASSWORD ?? '';
+const databaseName = process.env.DB_NOMBRE ?? process.env.DB_DATABASE ?? 'parking_db';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
+      useFactory: () => ({
         type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: configService.get('DB_PORT'),
-        username: configService.get('DB_USUARIO'),
-        password: configService.get('DB_CONTRASENA'),
-        database: configService.get('DB_NOMBRE'),
+        host: databaseHost,
+        port: databasePort,
+        username: databaseUser,
+        password: databasePassword,
+        database: databaseName,
         entities: [Ticket],
         synchronize: true,
         logging: true,
       }),
-      inject: [ConfigService],
     }),
     AuthModule,
     TicketsModule,

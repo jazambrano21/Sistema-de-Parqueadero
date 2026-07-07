@@ -51,7 +51,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/usuarios_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/parking_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 12345678
     networks:
@@ -68,7 +68,7 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/zonas_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/parking_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 12345678
     networks:
@@ -89,7 +89,7 @@ services:
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: 12345678
-      DB_DATABASE: vehiculos_db
+      DB_DATABASE: parking_db
     networks:
       - parking-network
     depends_on:
@@ -108,7 +108,7 @@ services:
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: 12345678
-      DB_DATABASE: tickets_db
+      DB_DATABASE: parking_db
       PERSONAS_URL: http://ms-usuarios-roles-oauth:8082
       VEHICULOS_URL: http://ms-vehiculos:3000
       ESPACIOS_URL: http://ms-zonas-espacios:8081
