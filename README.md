@@ -426,8 +426,4 @@
  - Tickets controlan la entrada, permanencia y salida.
  - Auditoria registra eventos relevantes para trazabilidad.
 
-
-prueba para la rama 
-
-Prueba 2 para la rama
-Prueba 3
+Prueba para la rama por comandos
