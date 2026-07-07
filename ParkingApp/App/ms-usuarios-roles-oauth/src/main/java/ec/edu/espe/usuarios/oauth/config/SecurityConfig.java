@@ -37,7 +37,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/oauth/token/generate", "/api/oauth/token/revoke", "/api/oauth/token/validate", "/.well-known/jwks.json").permitAll()
+                .requestMatchers("/api/oauth/token/generate", "/api/oauth/token/revoke", "/api/oauth/token/validate", "/.well-known/jwks.json", "/api/auth/**").permitAll()
                 // Swagger / OpenAPI — acceso público
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**").permitAll()
                 .anyRequest().denyAll()

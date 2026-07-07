@@ -1,4 +1,4 @@
-package com.example.oauth_server.config;
+package ec.edu.espe.usuarios.oauth.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
