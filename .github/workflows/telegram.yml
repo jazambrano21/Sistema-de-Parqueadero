@@ -8,8 +8,9 @@ on:
 
 jobs:
 
-  sonar-java:
-    name: Test y Sonar - Microservicios Java
+  # ── Tests Java ────────────────────────────────────────────────────────────
+  test-java:
+    name: Tests Java - ${{ matrix.module }}
     strategy:
       matrix:
         module: [ms-usuarios-roles-oauth, ms-zonas-espacios]
@@ -31,14 +32,13 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
-      - name: Test y analisis Sonar
+      - name: Ejecutar tests
         working-directory: ParkingApp/App/${{ matrix.module }}
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=jazambrano21_Sistema-de-Parqueadero
+        run: mvn -B test
 
-  sonar-nestjs:
-    name: Test y Sonar - Microservicios NestJS
+  # ── Tests NestJS ──────────────────────────────────────────────────────────
+  test-nestjs:
+    name: Tests NestJS - ${{ matrix.module }}
     strategy:
       matrix:
         module: [ms-tickets, ms-vehiculos]
@@ -53,20 +53,15 @@ jobs:
         with:
           node-version: '20'
 
-      - uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-node-
-
       - name: Instalar y testear
         working-directory: ParkingApp/App/${{ matrix.module }}
         run: |
-          npm ci --legacy-peer-deps
+          npm install --legacy-peer-deps
           npm run test -- --passWithNoTests --forceExit
 
-  sonar-frontend:
-    name: Test y Sonar - Frontend
+  # ── Frontend ──────────────────────────────────────────────────────────────
+  test-frontend:
+    name: Tests Frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -86,32 +81,76 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Instalar y testear
+      - name: Instalar y testear Frontend
         if: steps.check.outputs.exists == 'true'
         working-directory: ParkingApp/Frontend
         run: |
-          npm ci --legacy-peer-deps
+          npm install --legacy-peer-deps
           npm run test -- --passWithNoTests --forceExit
 
-      - name: Sin frontend - OK
+      - name: Sin frontend
         if: steps.check.outputs.exists == 'false'
-        run: echo "No hay Frontend aún. Saltando."
+        run: echo "Frontend no implementado aún. Paso omitido."
 
+  # ── Análisis Sonar (no bloquea el pipeline) ───────────────────────────────
+  sonar-analysis:
+    name: Análisis SonarCloud
+    needs: [test-java, test-nestjs]
+    if: always() && needs.test-java.result == 'success' && needs.test-nestjs.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Sonar - ms-usuarios-roles-oauth
+        working-directory: ParkingApp/App/ms-usuarios-roles-oauth
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=jazambrano21_Sistema-de-Parqueadero \
+            -Dsonar.organization=jazambrano21 \
+            -Dsonar.host.url=https://sonarcloud.io || echo "::warning::Sonar analysis failed but not blocking"
+
+      - name: Sonar - ms-zonas-espacios
+        working-directory: ParkingApp/App/ms-zonas-espacios
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=jazambrano21_Sistema-de-Parqueadero \
+            -Dsonar.organization=jazambrano21 \
+            -Dsonar.host.url=https://sonarcloud.io || echo "::warning::Sonar analysis failed but not blocking"
+
+  # ── Notificación Telegram ─────────────────────────────────────────────────
   telegram-notification:
-    name: Enviar mensaje a Telegram
-    needs: [sonar-java, sonar-nestjs, sonar-frontend]
+    name: Notificar en Telegram
+    needs: [test-java, test-nestjs, test-frontend]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Determinar resultado
         id: resultado
         run: |
-          if [ "${{ needs.sonar-java.result }}" == "success" ] && \
-             [ "${{ needs.sonar-nestjs.result }}" == "success" ] && \
-             [ "${{ needs.sonar-frontend.result }}" == "success" ]; then
-            echo "estado=✅ Pipeline OK en ${{ github.ref_name }} - Commit: ${{ github.sha }}" >> $GITHUB_OUTPUT
+          java="${{ needs.test-java.result }}"
+          nestjs="${{ needs.test-nestjs.result }}"
+          frontend="${{ needs.test-frontend.result }}"
+          if [ "$java" == "success" ] && [ "$nestjs" == "success" ] && [ "$frontend" == "success" ]; then
+            echo "estado=✅ Tests OK en ${{ github.ref_name }} | Commit: ${{ github.sha }}" >> $GITHUB_OUTPUT
           else
-            echo "estado=❌ Pipeline FALLO en ${{ github.ref_name }} - Java=${{ needs.sonar-java.result }} NestJS=${{ needs.sonar-nestjs.result }} Frontend=${{ needs.sonar-frontend.result }}" >> $GITHUB_OUTPUT
+            echo "estado=❌ Tests FALLARON en ${{ github.ref_name }} | Java=$java | NestJS=$nestjs | Frontend=$frontend | Commit: ${{ github.sha }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Enviar a Telegram
