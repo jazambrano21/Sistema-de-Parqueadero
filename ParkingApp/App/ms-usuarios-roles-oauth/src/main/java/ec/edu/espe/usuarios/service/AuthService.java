@@ -25,7 +25,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
 
-    @Value("${oauth.server.url:http://localhost:9000}")
+    @Value("${oauth.server.url:http://localhost:8082}")
     private String oauthServerUrl;
 
     /**
@@ -98,7 +98,7 @@ public class AuthService {
     private void revokeTokenInOAuth(String token) {
         try {
             RestTemplate restTemplate = new RestTemplate();
-            String url = oauthServerUrl + "/api/token/revoke";
+            String url = oauthServerUrl + "/api/oauth/token/revoke";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(Map.of("token", token), headers);
@@ -110,7 +110,7 @@ public class AuthService {
     private String requestTokenFromOAuth(String username, List<String> roles) {
         try {
             RestTemplate restTemplate = new RestTemplate();
-            String url = oauthServerUrl + "/api/token/generate";
+            String url = oauthServerUrl + "/api/oauth/token/generate";
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

@@ -12,6 +12,7 @@ import ec.edu.espe.usuarios.repository.PersonRepository;
 import ec.edu.espe.usuarios.repository.RoleRepository;
 import ec.edu.espe.usuarios.repository.UserRepository;
 import ec.edu.espe.usuarios.repository.UserRoleRepository;
+import ec.edu.espe.usuarios.service.AuditEventPublisher;
 import ec.edu.espe.usuarios.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,9 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private UserRoleRepository userRoleRepository;
 
+    @Autowired
+    private AuditEventPublisher auditEventPublisher;
+
     @Override
     public UserResponse createUser(UserCreateRequest userRequest) {
         if (personRepository.existsByEmail(userRequest.getEmail()))
@@ -69,6 +73,14 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         user = userRepository.save(user);
+
+        auditEventPublisher.publishUserEvent(
+            "CREATE",
+                user.getId().toString(),
+                user.getUsername(),
+                person
+        );
+
         return mapToUserResponse(user);
     }
 
@@ -105,11 +117,12 @@ public class UserServiceImpl implements UserService {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rol no encontrado"));
 
-        if (userRoleRepository.existsByUserIdAndRoleId(userId, roleId))
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El rol ya esta asignado al usuario");
+        List<UserRole> existingRoles = userRoleRepository.findByUserId(userId);
+        if (!existingRoles.isEmpty()) {
+            userRoleRepository.deleteAll(existingRoles);
+        }
 
         UserRoleId userRoleId = new UserRoleId(userId, roleId);
-
         UserRole userRole = UserRole.builder()
                 .id(userRoleId)
                 .user(user)
@@ -120,7 +133,44 @@ public class UserServiceImpl implements UserService {
         return mapToUserResponse(user);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    @Override
+    @Transactional
+    public UserResponse assignRoleByName(UUID userId, String roleName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        String normalizedName = roleName.toUpperCase();
+
+        Role role = roleRepository.findByName(normalizedName)
+                .orElseGet(() -> roleRepository.save(
+                        Role.builder()
+                                .name(normalizedName)
+                                .description("Rol " + normalizedName + " creado automáticamente")
+                                .build()
+                ));
+
+        if (userRoleRepository.existsByUserIdAndRoleId(userId, role.getId())) {
+            return mapToUserResponse(user);
+        }
+
+        UserRoleId userRoleId = new UserRoleId(userId, role.getId());
+        UserRole userRole = UserRole.builder()
+                .id(userRoleId)
+                .user(user)
+                .role(role)
+                .build();
+
+        userRoleRepository.save(userRole);
+        return mapToUserResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse assignInitialRole(UUID userId) {
+        boolean adminExists = userRoleRepository.existsByRole_NameIgnoreCase("ADMIN");
+        String roleName = adminExists ? "USER" : "ADMIN";
+        return assignRoleByName(userId, roleName);
+    }
 
     private String generateUsername(String firstName, String middleName, String lastName) {
         StringBuilder base = new StringBuilder();

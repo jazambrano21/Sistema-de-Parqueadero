@@ -26,7 +26,7 @@ public class TokenService {
     public String generate(String username, List<String> roles) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("http://localhost:9000")
+                .issuer("http://localhost:8082")
                 .issuedAt(now)
                 .expiresAt(now.plus(EXPIRY_HOURS, ChronoUnit.HOURS))
                 .subject(username)
