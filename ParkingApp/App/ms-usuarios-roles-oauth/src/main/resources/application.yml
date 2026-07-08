@@ -1,8 +1,8 @@
 spring:
     datasource:
-        url: jdbc:postgresql://localhost:5432/usuarios_db
+        url: jdbc:postgresql://localhost:5432/parking_db
         username: postgrest
-        password: qwerty12
+        password: 12345678
         driver-class-name: org.postgresql.Driver
 
     jpa:
