@@ -16,6 +16,18 @@ services:
     networks:
       - parking-network
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: parking-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - parking-network
+
+
+
+
   # Kong API Gateway
   kong:
     image: kong/kong-gateway:3.4.0
@@ -68,13 +80,20 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/zonas_db
-      SPRING_DATASOURCE_USERNAME: postgrest
-      SPRING_DATASOURCE_PASSWORD: qwerty12
+      DB_URL: jdbc:postgresql://postgres:5432/zonas_db
+      DB_USERNAME: postgrest
+      DB_PASSWORD: qwerty12
+      JWK_SET_URI: http://ms-usuarios-roles-oauth:9000/oauth2/jwks
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_EXCHANGE: audit-exchange
     networks:
       - parking-network
     depends_on:
       - postgres
+      - rabbitmq
 
   # Microservicio de Vehículos
   ms-vehiculos:
