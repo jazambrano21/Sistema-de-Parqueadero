@@ -110,7 +110,7 @@ services:
       dockerfile: Dockerfile
     container_name: ms-tickets
     ports:
-      - "3001:3001"
+      - "3002:3002"
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
