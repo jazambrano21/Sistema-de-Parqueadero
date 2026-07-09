@@ -13,8 +13,14 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import ec.edu.espe.usuarios.audit.AuditEventPublisher;
+import jakarta.servlet.http.HttpServletRequest;
+
 
 import java.util.Map;
 
@@ -26,7 +32,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
-
+    private final AuditEventPublisher auditEventPublisher;
     /**
      * Registro de usuario administrador (público).
      * POST http://localhost:8082/api/auth/register
@@ -40,13 +46,21 @@ public class AuthController {
             @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
     })
+    
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody UserCreateRequest request) {
+        public ResponseEntity<UserResponse> register(@Valid @RequestBody UserCreateRequest request,
+                                                HttpServletRequest httpRequest) {
+
         UserResponse user = userService.createUser(request);
-        // Asignar rol ADMIN automáticamente
-        // Nota: Necesitas crear el rol ADMIN primero o modificar el servicio
-        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(user);
-    }
+
+        auditEventPublisher.publish(httpRequest, "USUARIO", "CREATE", Map.of(
+                "id", user.getId(),
+                "username", user.getUsername(),
+                "email", user.getPerson().getEmail()
+        ), "audit.usuario.create");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(user);
+}
 
     /**
      * Login de usuario.
