@@ -75,10 +75,20 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Credenciales inválidas"),
             @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
     })
+    
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
-    }
+        public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
+                                                HttpServletRequest httpRequest) {
+
+        LoginResponse response = authService.login(request);
+
+        auditEventPublisher.publish(httpRequest, "USUARIO", "LOGIN", Map.of(
+                "username", response.getUsername(),
+                "roles", response.getRoles()
+        ), "audit.usuario.login");
+
+        return ResponseEntity.ok(response);
+        }
 
     /**
      * Logout — revoca el token antes de que expire.
@@ -95,8 +105,16 @@ public class AuthController {
     })
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout(
-            @RequestHeader("Authorization") String authHeader) {
-        return ResponseEntity.ok(authService.logout(authHeader));
-    }
+        public ResponseEntity<Map<String, String>> logout(
+                @RequestHeader("Authorization") String authHeader,
+                HttpServletRequest httpRequest) {
+
+        Map<String, String> response = authService.logout(authHeader);
+
+        auditEventPublisher.publish(httpRequest, "USUARIO", "LOGOUT", Map.of(
+                "message", "Logout exitoso"
+        ), "audit.usuario.logout");
+
+        return ResponseEntity.ok(response);
+        }
 }
