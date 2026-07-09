@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,13 +29,18 @@ public class AuthController {
     private final UserService userService;
 
     /**
-     * Registro de usuario administrador (público).
+     * Registro de usuario (público).
      * POST http://localhost:8082/api/auth/register
-     * Solo para crear el primer usuario administrador del sistema.
+     *
+     * Regla de rol inicial: el PRIMER usuario que se registra en todo el
+     * sistema (cuando todavía no existe ningún ADMIN) queda como ADMIN.
+     * Cualquier registro posterior queda como USER. Esto lo decide
+     * userService.assignInitialRole().
      */
     @Operation(
-            summary = "Registrar usuario administrador",
-            description = "Crea un nuevo usuario con rol ADMIN. No requiere autenticación previa. Solo para inicializar el sistema."
+            summary = "Registrar nuevo usuario",
+            description = "Crea un nuevo usuario. Si es el primer usuario del sistema (aún no existe ningún ADMIN), " +
+                    "se le asigna ADMIN automáticamente; en caso contrario se le asigna USER. No requiere autenticación previa."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente"),
@@ -43,9 +49,8 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody UserCreateRequest request) {
         UserResponse user = userService.createUser(request);
-        // Asignar rol ADMIN automáticamente
-        // Nota: Necesitas crear el rol ADMIN primero o modificar el servicio
-        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(user);
+        UserResponse userWithRole = userService.assignInitialRole(user.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(userWithRole);
     }
 
     /**
