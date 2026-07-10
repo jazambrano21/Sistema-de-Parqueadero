@@ -44,7 +44,7 @@ public class Espacio {
     @Column
     private Boolean activo;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_zona")
     private Zona zona;
 
