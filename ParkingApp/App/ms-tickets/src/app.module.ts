@@ -7,22 +7,27 @@ import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
+      inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: configService.get('DB_PORT'),
-        username: configService.get('DB_USUARIO'),
-        password: configService.get('DB_CONTRASENA'),
-        database: configService.get('DB_NOMBRE'),
+        host: configService.get<string>('DB_HOST') || 'localhost',
+        port: Number(configService.get<string>('DB_PORT') || 5432),
+        username: configService.get<string>('DB_USUARIO') || 'postgres',
+        password: configService.get<string>('DB_CONTRASENA') || '',
+        database: configService.get<string>('DB_NOMBRE') || 'tickets_db',
         entities: [Ticket],
         synchronize: true,
         logging: true,
       }),
-      inject: [ConfigService],
     }),
+
     AuthModule,
     TicketsModule,
   ],

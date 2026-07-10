@@ -2,6 +2,7 @@ package ec.edu.espe.usuarios.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -14,11 +15,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Configuration
+@Configuration("appSecurityConfig")
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
+    @Order(2)
+    @Bean(name = "appSecurityFilterChain")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
@@ -30,7 +32,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
+    @Bean(name = "appJwtAuthenticationConverter")
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {

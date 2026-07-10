@@ -106,9 +106,15 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USERNAME: postgrest
-      DB_PASSWORD: qwerty12
-      DB_DATABASE: vehiculos_db
+      DB_USUARIO: postgrest
+      DB_CONTRASENA: qwerty12
+      DB_NOMBRE: parking_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_EXCHANGE: audit-exchange
+      RABBITMQ_ROUTING_KEY: audit.vehiculo.create
     networks:
       - parking-network
     depends_on:
@@ -121,16 +127,23 @@ services:
       dockerfile: Dockerfile
     container_name: ms-tickets
     ports:
-      - "3001:3001"
+      - "3002:3002"
     environment:
+      PORT: 3002
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USERNAME: postgrest
-      DB_PASSWORD: qwerty12
-      DB_DATABASE: tickets_db
-      PERSONAS_URL: http://ms-usuarios-roles-oauth:8082
-      VEHICULOS_URL: http://ms-vehiculos:3000
-      ESPACIOS_URL: http://ms-zonas-espacios:8081
+      DB_USUARIO: postgrest
+      DB_CONTRASENA: qwerty12
+      DB_NOMBRE: parking_db
+      MS_PERSONAS: http://ms-usuarios-roles-oauth:8082/api/users
+      MS_VEHICULOS: http://ms-vehiculos:3000/vehiculo
+      MS_ZONAS: http://ms-zonas-espacios:8081/api/espacios
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_EXCHANGE: audit-exchange
+      RABBITMQ_ROUTING_KEY: audit.ticket.create
     networks:
       - parking-network
     depends_on:

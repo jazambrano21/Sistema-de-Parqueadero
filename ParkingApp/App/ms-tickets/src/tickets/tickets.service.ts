@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { Vehiculo } from './interfaces/vehiculo.interface';
 import { Persona } from './interfaces/persona.interface';         
 import { Espacio } from './interfaces/espacio.interface';          
+import { EventPublisherService } from '../common/event-publisher.service';
 
 @Injectable()
 export class TicketsService {
@@ -18,21 +19,23 @@ export class TicketsService {
   private readonly vehiculoUrl: string;                           
   private readonly espacioUrl: string;
   private readonly tarifaPorHora: number;
+  
 
   
   constructor(
-    @InjectRepository(Ticket)
-    private ticketRepository: Repository<Ticket>,
-    private httpClient: HttpClientService,                       
-    private configService: ConfigService,
+  @InjectRepository(Ticket)
+  private ticketRepository: Repository<Ticket>,
+  private httpClient: HttpClientService,                       
+  private configService: ConfigService,
+  private readonly eventPublisher: EventPublisherService,
   ) {
-    this.personaUrl = this.configService.get('MS_PERSONAS') || 'http://localhost:8082/api/users';
-    this.vehiculoUrl = this.configService.get('MS_VEHICULOS') || 'http://localhost:3000/vehiculo';   
-    this.espacioUrl = this.configService.get('MS_ZONAS') || 'http://localhost:8081/api/espacios';
-    this.tarifaPorHora = this.configService.get('TARIFA_HORA', 1.0);
+  this.personaUrl = this.configService.get('MS_PERSONAS') || 'http://localhost:8082/api/users';
+  this.vehiculoUrl = this.configService.get('MS_VEHICULOS') || 'http://localhost:3000/vehiculo';   
+  this.espacioUrl = this.configService.get('MS_ZONAS') || 'http://localhost:8081/api/espacios';
+  this.tarifaPorHora = this.configService.get('TARIFA_HORA', 1.0);
   }
 
-  async create(createTicketDto: CreateTicketDto): Promise<Ticket> {
+  async create(createTicketDto: CreateTicketDto, context?: any): Promise<Ticket> {
 
     //1.- Validar que la persona exista
     const persona = await this.validarPersona(createTicketDto.dni);
@@ -64,6 +67,25 @@ export class TicketsService {
     });
 
     const ticketGuardado = await this.ticketRepository.save(ticket);
+
+    await this.eventPublisher.publish({
+      servicio: 'ms-tickets',
+      accion: 'CREATE',
+      entidad: 'TICKET',
+      datos: {
+        id: ticketGuardado.id,
+        placa: ticketGuardado.placa,
+        dni: ticketGuardado.dni,
+        idEspacio: ticketGuardado.idEspacio,
+        nombreZona: ticketGuardado.nombreZona,
+        activo: ticketGuardado.activo,
+        fechaHoraIngreso: ticketGuardado.fechaHoraIngreso,
+      },
+      usuario: 'anonymous',
+      ip: '0:0:0:0:0:0:0:1',
+      mac: '00:00:00:00:00:00',
+    });
+
     
     // Actualizar estado del espacio a OCUPADO
     await this.actualizarEstadoEspacio(createTicketDto.idEspacio, 'OCUPADO');

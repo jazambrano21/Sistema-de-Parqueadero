@@ -11,8 +11,8 @@ services:
       - "15672:15672"  # Interfaz web de administración
 
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin123
+      RABBITMQ_DEFAULT_USER: guest  
+      RABBITMQ_DEFAULT_PASS: guest
 
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
