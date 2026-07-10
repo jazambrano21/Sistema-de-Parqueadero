@@ -21,6 +21,8 @@ const formatDate = (date) => {
 };
 
 const setConnectionStatus = (connected) => {
+    if (!indicator || !statusText) return;
+
     if (connected) {
         indicator.className = 'w-3 h-3 bg-green-500 rounded-full inline-block';
         statusText.textContent = 'Conectado';
@@ -30,7 +32,7 @@ const setConnectionStatus = (connected) => {
     }
 };
 
-window iniciarSesion = async () => {
+window.iniciarSesion = async () => {
     const rol = document.getElementById('rolLogin').value;
     const username = document.getElementById('usernameLogin').value.trim();
     const password = document.getElementById('passwordLogin').value.trim();
@@ -40,13 +42,12 @@ window iniciarSesion = async () => {
         return;
     }
 
-    // VISITANTE puede entrar sin estar registrado
     if (rol === 'VISITANTE') {
         localStorage.setItem('rol', 'VISITANTE');
         localStorage.setItem('username', username);
         localStorage.setItem('dni', password);
 
-        mostrarDashboard();
+        await mostrarDashboard();
         return;
     }
 
@@ -70,7 +71,6 @@ window iniciarSesion = async () => {
 
         const dniUsuario = usuarioEncontrado.person?.dni;
 
-        // Según tu backend, la contraseña temporal es el DNI
         if (password !== dniUsuario) {
             alert('Contraseña incorrecta. Para pruebas usa el DNI del usuario.');
             return;
@@ -81,17 +81,19 @@ window iniciarSesion = async () => {
         localStorage.setItem('dni', dniUsuario);
         localStorage.setItem('userId', usuarioEncontrado.id);
 
-        mostrarDashboard();
+        await mostrarDashboard();
 
     } catch (error) {
         console.error('Error al iniciar sesión:', error);
-        alert('No se pudo iniciar sesión. Revisa que ms-usuarios esté levantado.');
+        alert('No se pudo iniciar sesión. Revisa que ms-usuarios esté levantado o que tenga CORS habilitado.');
     }
 };
 
-const cerrarSesion = () => {
+window.cerrarSesion = () => {
     localStorage.removeItem('rol');
     localStorage.removeItem('username');
+    localStorage.removeItem('dni');
+    localStorage.removeItem('userId');
 
     dashboardView.classList.add('hidden');
     loginView.classList.remove('hidden');
@@ -151,6 +153,11 @@ const agruparEspaciosPorZona = (zonas, espacios) => {
 };
 
 const renderizarZonasConEspacios = (zonas, espacios) => {
+    if (!zonasContainer) {
+        console.error('No existe el contenedor zonasContainer en el HTML');
+        return;
+    }
+
     if (!zonas || zonas.length === 0) {
         zonasContainer.innerHTML = `
             <div class="text-center py-12 text-gray-500">
@@ -162,9 +169,7 @@ const renderizarZonasConEspacios = (zonas, espacios) => {
     }
 
     const zonasConEspacios = agruparEspaciosPorZona(zonas, espacios);
-
-    const totalEspacios = espacios.length;
-    totalSpan.textContent = `${totalEspacios} espacios`;
+    totalSpan.textContent = `${espacios.length} espacios`;
 
     zonasContainer.innerHTML = zonasConEspacios.map((zona) => {
         return `
@@ -217,7 +222,7 @@ const renderizarCardEspacio = (esp) => {
 
     const puedeReservar =
         estado === 'DISPONIBLE' &&
-        (rol === 'ADMIN' || rol === 'USUARIO' || rol === 'VISITANTE');
+        (rol === 'ADMIN' || rol === 'Usuario' || rol === 'USUARIO' || rol === 'VISITANTE');
 
     return `
         <div class="espacio-card ${cardClass} rounded-lg shadow p-4 flex flex-col border-l-4">
@@ -268,10 +273,10 @@ const renderizarCardEspacio = (esp) => {
     `;
 };
 
-const reservarEspacio = async (idEspacio, nombreZona) => {
+window.reservarEspacio = async (idEspacio, nombreZona) => {
     try {
-        const placa = document.getElementById('placaInput').value;
-        const dni = document.getElementById('dniInput').value;
+        const placa = document.getElementById('placaInput').value.trim();
+        const dni = localStorage.getItem('dni') || document.getElementById('dniInput').value.trim();
 
         if (!placa || !dni) {
             alert('Ingrese placa y DNI para reservar');
@@ -285,10 +290,10 @@ const reservarEspacio = async (idEspacio, nombreZona) => {
         }
 
         const body = {
-            placa: placa,
-            dni: dni,
-            idEspacio: idEspacio,
-            nombreZona: nombreZona,
+            placa,
+            dni,
+            idEspacio,
+            nombreZona,
         };
 
         const response = await fetch(API_TICKETS, {
@@ -320,7 +325,14 @@ const reservarEspacio = async (idEspacio, nombreZona) => {
 };
 
 (async () => {
-    await mostrarDashboard();
+    const rol = localStorage.getItem('rol');
+
+    if (rol) {
+        await mostrarDashboard();
+    } else {
+        loginView.classList.remove('hidden');
+        dashboardView.classList.add('hidden');
+    }
 
     setInterval(() => {
         if (localStorage.getItem('rol')) {
