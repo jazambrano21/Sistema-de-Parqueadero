@@ -7,7 +7,7 @@ services:
     container_name: parking-postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 
+      POSTGRES_PASSWORD: 12345678
       POSTGRES_DB: parking_db
     ports:
       - "5432:5432"
@@ -53,15 +53,15 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/parking_db
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: 
+      SPRING_DATASOURCE_PASSWORD: 12345678
       # RabbitMQ vive en el contenedor "rabbitmq" del proyecto ms-audit,
       # que expone el puerto 5672 hacia la máquina host. host.docker.internal
       # es el nombre especial de Docker Desktop que resuelve hacia esa máquina,
       # así que no hace falta compartir red de Docker con el proyecto ms-audit.
       SPRING_RABBITMQ_HOST: host.docker.internal
       SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: admin
-      SPRING_RABBITMQ_PASSWORD: admin123
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
     networks:
       - parking-network
     depends_on:
@@ -78,7 +78,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/parking_db
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: 
+      SPRING_DATASOURCE_PASSWORD: 12345678
     networks:
       - parking-network
     depends_on:
@@ -96,7 +96,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USERNAME: postgres
-      DB_PASSWORD: 
+      DB_PASSWORD: 12345678
       DB_DATABASE: parking_db
     networks:
       - parking-network
@@ -115,7 +115,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USERNAME: postgres
-      DB_PASSWORD: 
+      DB_PASSWORD: 12345678
       DB_DATABASE: parking_db
       PERSONAS_URL: http://ms-usuarios-roles-oauth:8082
       VEHICULOS_URL: http://ms-vehiculos:3000

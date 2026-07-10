@@ -45,7 +45,7 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private AuditEventPublisher auditEventPublisher;
 
-    @Override
+    @Override 
     public UserResponse createUser(UserCreateRequest userRequest) {
         if (personRepository.existsByEmail(userRequest.getEmail()))
             throw new IllegalArgumentException("El correo ya esta registrado");
@@ -74,12 +74,20 @@ public class UserServiceImpl implements UserService {
 
         user = userRepository.save(user);
 
+        System.out.println("===== ANTES DE ENVIAR EVENTO =====");
+
         auditEventPublisher.publishUserEvent(
             "CREATE",
-                user.getId().toString(),
-                user.getUsername(),
-                person
-        );
+            user.getId().toString(),
+            user.getUsername(),
+            person.getDni(),
+            person.getFirstName(),
+            person.getLastName(),
+            person.getEmail()
+        );   
+
+        System.out.println("===== DESPUES DE ENVIAR EVENTO =====");
+    
 
         return mapToUserResponse(user);
     }
