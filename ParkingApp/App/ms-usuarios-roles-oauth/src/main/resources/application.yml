@@ -1,8 +1,8 @@
 spring:
     datasource:
         url: ${DB_URL:jdbc:postgresql://localhost:5432/parking_db}
-        username: ${DB_USERNAME:postgrest}
-        password: ${DB_PASSWORD:}
+        username: ${DB_USERNAME:postgres}
+        password: ${DB_PASSWORD:12345678}
         driver-class-name: org.postgresql.Driver
 
     jpa:
@@ -27,8 +27,8 @@ spring:
     rabbitmq:
         host: host.docker.internal
         port: 5672
-        username: admin
-        password: admin123
+        username: guest
+        password: guest 
 
 server:
     port: 8082
