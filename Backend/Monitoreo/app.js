@@ -1,9 +1,7 @@
-const HOST = window.location.hostname;
-
-const API_ZONAS = `http://${HOST}:8081/api/zonas`;
-const API_ESPACIOS = `http://${HOST}:8081/api/espacios`;
-const API_TICKETS = `http://${HOST}:3002/tickets`;
-const API_USERS = `http://${HOST}:8082/api/users`;
+const API_ZONAS = 'http://192.168.56.1:8081/api/zonas';
+const API_ESPACIOS = 'http://192.168.56.1:8081/api/espacios';
+const API_TICKETS = 'http://192.168.56.1:3002/tickets';
+const API_USERS = 'http://192.168.56.1:8082/api/users';
 
 const loginView = document.getElementById('loginView');
 const dashboardView = document.getElementById('dashboardView');
