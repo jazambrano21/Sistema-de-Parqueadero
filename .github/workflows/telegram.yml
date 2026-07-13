@@ -1,0 +1,119 @@
+name: CI - Tests, Sonar y Notificacion Telegram
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+      - test
+  pull_request:
+    branches:
+      - master
+      - test
+
+jobs:
+
+  sonar-java:
+    name: Test y Sonar - Microservicios Java
+    strategy:
+      matrix:
+        module: [ms-usuarios-roles-oauth, ms-zonas-espacios]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Test y analisis Sonar
+        working-directory: ParkingApp/App/${{ matrix.module }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+
+  sonar-nestjs:
+    name: Test y Sonar - Microservicios NestJS
+    strategy:
+      matrix:
+        module: [ms-tickets, ms-vehiculos]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias y correr tests
+        working-directory: ParkingApp/App/${{ matrix.module }}
+        run: |
+          npm install
+          npm run test -- --coverage
+
+  sonar-frontend:
+    name: Test y Sonar - Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias y correr tests
+        working-directory: ParkingApp/Frontend
+        run: |
+          npm install
+          npm test -- --coverage
+
+      - name: Analisis SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: ParkingApp/Frontend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  telegram-notification:
+    name: Enviar mensaje a Telegram
+    needs: [sonar-java, sonar-nestjs, sonar-frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determinar resultado
+        id: resultado
+        run: |
+          if [ "${{ needs.sonar-java.result }}" == "success" ] && [ "${{ needs.sonar-nestjs.result }}" == "success" ] && [ "${{ needs.sonar-frontend.result }}" == "success" ]; then
+            echo "estado=✅ Tests y analisis Sonar OK" >> $GITHUB_OUTPUT
+          else
+            echo "estado=❌ Fallaron los tests o el analisis Sonar" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Enviar notificacion a Telegram
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="${{ steps.resultado.outputs.estado }} en Sistema-de-Parqueadero. Rama: ${{ github.ref_name }}. Commit: ${{ github.sha }}"
