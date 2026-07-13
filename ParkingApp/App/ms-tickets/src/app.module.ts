@@ -9,7 +9,7 @@ import { AuthModule } from './auth/auth.module';
 const databaseHost = process.env.DB_HOST ?? 'localhost';
 const databasePort = parseInt(process.env.DB_PORT ?? '5432', 10);
 const databaseUser = process.env.DB_USUARIO ?? process.env.DB_USERNAME ?? 'postgres';
-const databasePassword = process.env.DB_CONTRASENA ?? process.env.DB_PASSWORD ?? '';
+const databasePassword = process.env.DB_CONTRASENA ?? process.env.DB_PASSWORD ?? '12345678';
 const databaseName = process.env.DB_NOMBRE ?? process.env.DB_DATABASE ?? 'parking_db';
 
 @Module({
