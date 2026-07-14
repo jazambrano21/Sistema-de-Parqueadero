@@ -51,6 +51,7 @@ services:
     ports:
       - "8082:8082"
     environment:
+<<<<<<< Updated upstream
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/parking_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: 12345678
@@ -62,6 +63,17 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
+=======
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/usuarios_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 12345678
+      OAUTH_SERVER_URL: http://localhost:8082
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_EXCHANGE: audit-exchange
+>>>>>>> Stashed changes
     networks:
       - parking-network
     depends_on:
@@ -76,10 +88,18 @@ services:
     ports:
       - "8081:8081"
     environment:
+<<<<<<< Updated upstream
       DB_URL: jdbc:postgresql://postgres:5432/parking_db
       DB_USERNAME: postgres
       DB_PASSWORD: 12345678
       RABBITMQ_HOST: host.docker.internal
+=======
+      DB_URL: jdbc:postgresql://postgres:5432/zonas_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: 12345678
+      JWK_SET_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+      RABBITMQ_HOST: rabbitmq
+>>>>>>> Stashed changes
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
@@ -99,13 +119,58 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
+<<<<<<< Updated upstream
       DB_USERNAME: postgres
       DB_PASSWORD: 12345678
       DB_DATABASE: parking_db
+=======
+      DB_USUARIO: postgres
+      DB_CONTRASENA: 12345678
+      DB_NOMBRE: parking_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_EXCHANGE: audit-exchange
+      RABBITMQ_ROUTING_KEY: audit.vehiculo.create
+      JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+>>>>>>> Stashed changes
     networks:
       - parking-network
     depends_on:
       - postgres
+<<<<<<< Updated upstream
+=======
+      - rabbitmq
+      - ms-usuarios-roles-oauth
+
+  # Microservicio de Auditoría
+  ms-audit:
+    build:
+      context: ./App/ms-audit
+      dockerfile: Dockerfile
+    container_name: ms-audit
+    ports:
+      - "3001:3001"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: 12345678
+      DB_NAME: audit_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_EXCHANGE: audit-exchange
+      RABBITMQ_QUEUE: audit-queue
+      JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+    networks:
+      - parking-network
+    depends_on:
+      - postgres
+      - rabbitmq
+>>>>>>> Stashed changes
 
   # Microservicio de Tickets
   ms-tickets:
@@ -118,12 +183,28 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
+<<<<<<< Updated upstream
       DB_USERNAME: postgres
       DB_PASSWORD: 12345678
       DB_DATABASE: parking_db
       PERSONAS_URL: http://ms-usuarios-roles-oauth:8082
       VEHICULOS_URL: http://ms-vehiculos:3000
       ESPACIOS_URL: http://ms-zonas-espacios:8081
+=======
+      DB_USUARIO: postgres
+      DB_CONTRASENA: 12345678
+      DB_NOMBRE: parking_db
+      MS_PERSONAS: http://ms-usuarios-roles-oauth:8082/api/users
+      MS_VEHICULOS: http://ms-vehiculos:3000/vehiculo
+      MS_ZONAS: http://ms-zonas-espacios:8081/api/espacios
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_EXCHANGE: audit-exchange
+      RABBITMQ_ROUTING_KEY: audit.ticket.create
+      JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+>>>>>>> Stashed changes
     networks:
       - parking-network
     depends_on:
