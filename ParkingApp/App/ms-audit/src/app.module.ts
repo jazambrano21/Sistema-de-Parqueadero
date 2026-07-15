@@ -6,6 +6,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuditModule } from './audit/audit.module';
 import { EventoAuditoria } from './audit/entities/evento-auditoria.entity';
+import { AuthModule } from './auth/auth.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -38,8 +40,9 @@ import { EventoAuditoria } from './audit/entities/evento-auditoria.entity';
       inject: [ConfigService],
     }),
     AuditModule,
+    AuthModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [AppService],
 })
 export class AppModule {}

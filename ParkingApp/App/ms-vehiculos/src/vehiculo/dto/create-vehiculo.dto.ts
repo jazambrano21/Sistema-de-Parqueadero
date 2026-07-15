@@ -107,11 +107,11 @@ export class CreateVehiculoDto {
     if (!object) return BaseVehiculoDto;
 
     switch (object.tipo) {
-      case 'auto':
+      case 'Auto':
         return AutoDto;
-      case 'motocicleta':
+      case 'Moto':
         return MotoDto;
-      case 'camion':
+      case 'Camioneta':
         return CamionetaDto;
       default:
         return BaseVehiculoDto;

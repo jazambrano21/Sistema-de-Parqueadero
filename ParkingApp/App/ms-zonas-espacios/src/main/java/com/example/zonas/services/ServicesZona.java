@@ -36,13 +36,14 @@ public class ServicesZona implements ZonaService {
     @Override
     @Transactional
     public ZonaResponseDto crearZona(ZonaRequestDto requestDto) {
-        if (zonaRepositorio.existsByNombre(requestDto.getNombre())) {
+        String nombreNormalizado = generarNombreZona(requestDto.getNombre());
+        if (zonaRepositorio.existsByNombre(nombreNormalizado)) {
             throw new IllegalArgumentException("Ya existe una zona con el nombre: " + requestDto.getNombre());
         }
 
         Zona zona = mapper.toZonaEntity(requestDto);
         zona.setCodigo(generarCodigoZona(requestDto.getTipo()));
-        zona.setNombre(generarNombreZona(requestDto.getNombre()));
+        zona.setNombre(nombreNormalizado);
         zona.setEstado(EstadoEspacio.DISPONIBLE);
         zona.setActivo(true);
         zona.setFechaCreacion(LocalDateTime.now());
@@ -102,9 +103,6 @@ public class ServicesZona implements ZonaService {
         if (nombre == null || nombre.trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre de la zona no puede estar vacío");
         }
-        String nombreNormalizado = nombre.trim().toUpperCase();
-        return nombreNormalizado.length() >= 3 
-            ? nombreNormalizado.substring(0, 3) 
-            : nombreNormalizado;
+        return nombre.trim().toUpperCase();
     }
 }

@@ -9,11 +9,14 @@ services:
     ports:
       - "5672:5672"    # Puerto AMQP
       - "15672:15672"  # Interfaz web de administración
+
     environment:
-      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_USER: guest  
       RABBITMQ_DEFAULT_PASS: guest
+
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+
     networks:
       - rabbitmq_network
 

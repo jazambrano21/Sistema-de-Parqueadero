@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
@@ -6,18 +6,17 @@ import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { JwtAuthGuard } from '../auth/jwt.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import type { Request } from 'express';
 
 /**
  * Tickets requieren ROLE_ADMIN.
  * Solo los administradores pueden crear, ver y cerrar tickets.
  */
 @ApiTags('tickets')
-// TEMPORAL: Desactivar autenticación para pruebas
-// @ApiBearerAuth()
+@ApiBearerAuth()
 @Controller('tickets')
-// TEMPORAL: Desactivar guards para pruebas
-// @UseGuards(JwtAuthGuard, RolesGuard)
-// @Roles('ROLE_ADMIN')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ROLE_ADMIN')
 export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}
 
@@ -27,9 +26,9 @@ export class TicketsController {
   @ApiResponse({ status: 400, description: 'Datos de entrada inválidos.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'Requiere ROLE_ADMIN.' })
-  create(@Body() createTicketDto: CreateTicketDto) {
-    return this.ticketsService.create(createTicketDto);
-  }
+  create(@Body() createTicketDto: CreateTicketDto, @Req() req: Request) {
+    return this.ticketsService.create(createTicketDto, req);
+}
 
   @Get()
   @ApiOperation({ summary: 'Listar todos los tickets', description: 'Retorna todos los tickets registrados.' })
@@ -66,8 +65,8 @@ export class TicketsController {
   @ApiResponse({ status: 404, description: 'Ticket no encontrado.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'Requiere ROLE_ADMIN.' })
-  cerrarticket(@Param('id') id: string, @Body() updateTicketDto: UpdateTicketDto) {
-    return this.ticketsService.cerrarticket(id, updateTicketDto);
+  cerrarticket(@Param('id') id: string, @Body() updateTicketDto: UpdateTicketDto, @Req() req: Request) {
+    return this.ticketsService.cerrarticket(id, updateTicketDto, req);
   }
 
   @Delete(':id')

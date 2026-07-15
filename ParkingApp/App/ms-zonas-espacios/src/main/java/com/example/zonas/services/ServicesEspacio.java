@@ -25,6 +25,7 @@ public class ServicesEspacio implements EspacioService {
     private final MapperUtils mapper;
     private final EspacioRepositorio espacioRepositorio;
     private final ZonaRepositorio zonaRepositorio;
+    private final EspacioSseService espacioSseService;
 
     @Override
     @Transactional(readOnly = true)
@@ -41,8 +42,12 @@ public class ServicesEspacio implements EspacioService {
                 .orElseThrow(() -> new IllegalArgumentException("Zona no encontrada: " + requestDto.getIdZona()));
 
         long espaciosExistentes = espacioRepositorio.countByZonaId(zona.getId());
-        if (espaciosExistentes >= 2) {
-            throw new IllegalStateException("No se pueden crear más de 2 espacios en la misma zona");
+        
+        
+        if (espaciosExistentes >= zona.getCapacidad()) {
+            throw new IllegalStateException(
+                    "No se pueden crear más espacios. Capacidad máxima de la zona alcanzada: " + zona.getCapacidad()
+            );
         }
 
         Espacio espacio = mapper.toEspacioEntity(requestDto);
@@ -71,9 +76,13 @@ public class ServicesEspacio implements EspacioService {
 
         if (!nuevaZona.getId().equals(espacio.getZona().getId())) {
             long espaciosExistentes = espacioRepositorio.countByZonaId(nuevaZona.getId());
-            if (espaciosExistentes >= 2) {
-                throw new IllegalStateException("No se pueden mover espacios a una zona que ya tiene 2 espacios");
+
+            if (espaciosExistentes >= nuevaZona.getCapacidad()) {
+                throw new IllegalStateException(
+                        "No se pueden mover espacios. Capacidad máxima de la zona alcanzada: " + nuevaZona.getCapacidad()
+                );
             }
+
             espacio.setZona(nuevaZona);
             espacio.setCodigo(nuevaZona.getCodigo());
             espacio.setNombre(generarNombreEspacio(nuevaZona));
@@ -104,7 +113,9 @@ public class ServicesEspacio implements EspacioService {
         espacio.setActivo(estado != EstadoEspacio.MANTENIMIENTO);
         espacio.setFechaActualizacion(LocalDateTime.now());
 
-        return mapper.toEspacioResponseDto(espacioRepositorio.save(espacio));
+        EspacioResponseDto response = mapper.toEspacioResponseDto(espacioRepositorio.save(espacio));
+        espacioSseService.emitirCambioEstado(response);
+        return response;
     }
 
     @Override

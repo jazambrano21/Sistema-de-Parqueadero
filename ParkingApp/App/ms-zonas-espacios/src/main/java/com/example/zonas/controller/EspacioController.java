@@ -4,13 +4,16 @@ import com.example.zonas.audit.AuditEventPublisher;
 import com.example.zonas.dto.request.EspacioRequestDto;
 import com.example.zonas.dto.response.EspacioResponseDto;
 import com.example.zonas.entidades.EstadoEspacio;
+import com.example.zonas.services.EspacioSseService;
 import com.example.zonas.services.interfaz.EspacioService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -23,10 +26,16 @@ public class EspacioController {
 
     private final EspacioService espacioService;
     private final AuditEventPublisher auditEventPublisher;
+    private final EspacioSseService espacioSseService;
 
     @GetMapping
     public ResponseEntity<List<EspacioResponseDto>> listarEspacios() {
         return ResponseEntity.ok(espacioService.obtenerEspacios());
+    }
+
+    @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter suscribirseASse() {
+        return espacioSseService.subscribe();
     }
 
     @GetMapping("/disponibles")

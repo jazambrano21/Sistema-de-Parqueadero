@@ -11,6 +11,7 @@
  - Microservicio de vehiculos para registrar y consultar vehiculos.
  - Microservicio de tickets para controlar ingresos, salidas y cobros.
  - Microservicio de auditoria para guardar eventos relevantes del sistema.
+ - Kong como gateway para centralizar el acceso a las APIs.
  - Base de datos relacional para persistencia de cada servicio segun su implementacion.
  - RabbitMQ para publicacion y consumo de eventos de auditoria.
 
@@ -424,5 +425,3 @@
  - Zonas y espacios representan la disponibilidad fisica.
  - Tickets controlan la entrada, permanencia y salida.
  - Auditoria registra eventos relevantes para trazabilidad.
-
-Prueba para la rama N2

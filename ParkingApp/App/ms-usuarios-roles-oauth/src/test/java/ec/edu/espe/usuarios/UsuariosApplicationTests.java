@@ -1,17 +1,13 @@
 package ec.edu.espe.usuarios;
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.springframework.boot.test.context.SpringBootTest;
 
-/**
- * Test básico que no carga el contexto de Spring.
- * El contexto completo requiere PostgreSQL y OAuth server, no disponibles en CI.
- * Las pruebas de integración se realizan en entorno local.
- */
+@SpringBootTest
 class UsuariosApplicationTests {
 
-    @Test
-    void applicationClassExists() {
-        assertTrue(UsuariosApplication.class != null);
-    }
+	@Test
+	void contextLoads() {
+	}
+
 }

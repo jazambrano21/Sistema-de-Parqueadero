@@ -27,7 +27,6 @@ export class AuditConsumer implements OnModuleInit {
 
   async onModuleInit() {
     await this.connect();
-    await this.consume();
   }
 
   private async connect() {
@@ -41,6 +40,7 @@ export class AuditConsumer implements OnModuleInit {
       this.connection = await amqp.connect(url);
       this.channel = await this.connection.createChannel();
       this.logger.log(`Conectado a RabbitMQ en ${host}:${port}`);
+      await this.consume();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Error desconocido';
@@ -59,6 +59,7 @@ export class AuditConsumer implements OnModuleInit {
 
     if (!this.channel) {
       this.logger.warn('No hay canal de RabbitMQ disponible, se reintentará más tarde');
+      setTimeout(() => this.connect(), 5000);
       return;
     }
 
@@ -67,7 +68,7 @@ export class AuditConsumer implements OnModuleInit {
       await this.channel.assertQueue(queue, { durable: true });
       await this.channel.bindQueue(queue, exchange, routingKey);
 
-      this.channel.consume(
+      await this.channel.consume(
         queue,
         async (msg) => {
           if (!msg) {
@@ -103,10 +104,13 @@ export class AuditConsumer implements OnModuleInit {
         },
         { noAck: false },
       );
+
+      this.logger.log(`Consumidor configurado: queue=${queue}, exchange=${exchange}, routingKey=${routingKey}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Error desconocido';
-      this.logger.error(`Error configurando consumidor: ${errorMessage}`);
+      this.logger.error(`Error configurando consumidor: ${errorMessage}. Se reintentará en 5s`);
+      setTimeout(() => this.connect(), 5000);
     }
   }
 }

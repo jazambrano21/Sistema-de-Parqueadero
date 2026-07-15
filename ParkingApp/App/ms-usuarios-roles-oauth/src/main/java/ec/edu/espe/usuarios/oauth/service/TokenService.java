@@ -1,5 +1,6 @@
 package ec.edu.espe.usuarios.oauth.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -15,6 +16,9 @@ public class TokenService {
     private final JwtEncoder jwtEncoder;
     private static final long EXPIRY_HOURS = 1;
 
+    @Value("${oauth.server.url:http://localhost:8082}")
+    private String issuerUrl;
+
     public TokenService(JwtEncoder jwtEncoder) {
         this.jwtEncoder = jwtEncoder;
     }
@@ -26,7 +30,7 @@ public class TokenService {
     public String generate(String username, List<String> roles) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
-                .issuer("http://localhost:8082")
+                .issuer(issuerUrl)
                 .issuedAt(now)
                 .expiresAt(now.plus(EXPIRY_HOURS, ChronoUnit.HOURS))
                 .subject(username)

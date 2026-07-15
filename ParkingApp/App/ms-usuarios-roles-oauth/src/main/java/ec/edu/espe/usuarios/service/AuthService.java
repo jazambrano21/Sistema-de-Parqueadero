@@ -25,7 +25,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
 
-    @Value("${oauth.server.url:http://localhost:8082}")
+    @Value("${oauth.server.url:http://localhost:9000}")
     private String oauthServerUrl;
 
     /**
