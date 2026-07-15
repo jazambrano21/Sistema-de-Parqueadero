@@ -125,22 +125,22 @@
         },
         "description": "Actualiza la variable ZONA_ID con el id de la zona creada."
       },
-      "response": []
-    },
-    {
-      "name": "5. Zonas - Ver por ID",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8000/api/zonas/{{zonaId}}",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "8000",
-          "path": ["api", "zonas", "{{zonaId}}"]
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  pm.collectionVariables.set('zonaId', json.id);",
+              "  console.log('zonaId guardado:', json.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
         }
-      },
-      "response": []
+      ]
     },
     {
       "name": "5a. Zonas - Editar zona",
@@ -220,7 +220,22 @@
         },
         "description": "Actualiza la variable ESPACIO_ID con el id del espacio creado."
       },
-      "response": []
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  pm.collectionVariables.set('espacioId', json.id);",
+              "  console.log('espacioId guardado:', json.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
     },
     {
       "name": "8. Espacios - Cambiar estado",
@@ -423,9 +438,24 @@
           "port": "8000",
           "path": ["tickets"]
         },
-        "description": "Crea un ticket de reserva. Actualiza TICKET_ID con el id del ticket creado."
+        "description": "Crea un ticket de reserva. El test script guarda automáticamente el id del ticket en la variable ticketId."
       },
-      "response": []
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  const json = pm.response.json();",
+              "  pm.collectionVariables.set('ticketId', json.id);",
+              "  console.log('ticketId guardado:', json.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
     },
     {
       "name": "15. Tickets - Listar todos",
