@@ -1,40 +1,38 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('tickets')
 export class Ticket {
 
-    @PrimaryGeneratedColumn('uuid')
-    id!: string;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
-    @Column()
-    placa!: string;
+  @Column()
+  placa!: string;
 
-    @Column()
-    dni!: string;
+  @Column()
+  dni!: string;
 
-    @Column({type: 'uuid'})
-    idEspacio!: string;
+  @Column({ type: 'uuid' })
+  idEspacio!: string;
 
-    @Column()
-    nombreZona!: string;
+  @Column()
+  nombreZona!: string;
 
-    @Column({ type: 'timestamp' })
-    fechaHoraIngreso!: Date;
+  @Column({ type: 'timestamp' })
+  fechaHoraIngreso!: Date;
 
-    @Column({ type: 'timestamp', nullable: true })
-    fechaHoraSalida!: Date;
+  @Column({ type: 'timestamp', nullable: true })
+  fechaHoraSalida!: Date;
 
-    @Column({default: true})
-    activo!: boolean;
+  @Column({ default: true })
+  activo!: boolean;
 
-    @Column()
-    valorRecaudado!: number;
+  @Column({ type: 'float', default: 0 })
+  valorRecaudado!: number;
 
-    @CreateDateColumn()
-    createdAt!: Date;
+  @CreateDateColumn()
+  createdAt!: Date;
 
-    @CreateDateColumn()
-    updatedAt!: Date;
+  @UpdateDateColumn()   // ← corregido: era @CreateDateColumn por error
+  updatedAt!: Date;
 }
-
-

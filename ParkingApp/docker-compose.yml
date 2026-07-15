@@ -27,6 +27,13 @@ services:
     networks:
       - parking-network
 
+  # Redis — caché para ms-tickets
+  redis:
+    image: redis:7-alpine
+    container_name: parking-redis
+    networks:
+      - parking-network
+
 
 
 
@@ -186,11 +193,15 @@ services:
       RABBITMQ_EXCHANGE: audit-exchange
       RABBITMQ_ROUTING_KEY: audit.ticket.create
       JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TARIFA_HORA: 1.5
     networks:
       - parking-network
     depends_on:
       - postgres
       - rabbitmq
+      - redis
       - ms-usuarios-roles-oauth
       - ms-vehiculos
       - ms-zonas-espacios

@@ -12,7 +12,6 @@ import { HealthController } from './health/health.controller';
       isGlobal: true,
       envFilePath: '.env',
     }),
-
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -22,15 +21,14 @@ import { HealthController } from './health/health.controller';
         port: Number(configService.get<string>('DB_PORT') || 5432),
         username: configService.get<string>('DB_USUARIO') || 'postgres',
         password: configService.get<string>('DB_CONTRASENA') || '',
-        database: configService.get<string>('DB_NOMBRE') || 'tickets_db',
+        database: configService.get<string>('DB_NOMBRE') || 'parking_db',
         entities: [Ticket],
         synchronize: true,
-        logging: true,
+        logging: false,
       }),
     }),
-
     AuthModule,
-    TicketsModule,
+    TicketsModule, // CacheModule se registra dentro de TicketsModule
   ],
   controllers: [HealthController],
 })
