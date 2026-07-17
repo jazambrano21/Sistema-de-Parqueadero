@@ -31,8 +31,13 @@ services:
   redis:
     image: redis:7-alpine
     container_name: parking-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
     networks:
-      - parking-network
+      - parking-network- parking-network
 
 
 
@@ -88,6 +93,7 @@ services:
     depends_on:
       - postgres
       - rabbitmq
+      - redis
 
   # Microservicio de Zonas y Espacios
   ms-zonas-espacios:
@@ -139,6 +145,7 @@ services:
     depends_on:
       - postgres
       - rabbitmq
+      - redis
       - ms-usuarios-roles-oauth
 
   # Microservicio de Auditoría
@@ -212,3 +219,4 @@ networks:
 
 volumes:
   postgres-data:
+  redis-data:

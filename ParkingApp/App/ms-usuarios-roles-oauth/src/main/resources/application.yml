@@ -41,3 +41,4 @@ oauth:
 
 rabbitmq:
   exchange: ${RABBITMQ_EXCHANGE:audit-exchange}
+  

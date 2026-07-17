@@ -6,6 +6,8 @@ import { CreateVehiculoDto } from '../dto/create-vehiculo.dto';
 import { UpdateVehiculoDto } from '../dto/update-vehiculo.dto';
 import { FactoryVehiculos } from '../factory/factory-vehiculos';
 import { EventPublisherService } from '../../common/event-publisher.service';
+import { CacheService } from '../../common/cache.service';
+
 
 @Injectable()
 export class VehiculosService {
@@ -15,6 +17,7 @@ export class VehiculosService {
     @InjectRepository(Vehiculo)
     private repositoryVehiculo: Repository<Vehiculo>,
     private readonly eventPublisher: EventPublisherService,
+    private readonly cacheService: CacheService,
   ) {}
 
   async create(createVehiculoDto: CreateVehiculoDto, context?: any): Promise<Vehiculo> {

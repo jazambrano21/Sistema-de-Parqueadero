@@ -1,5 +1,7 @@
 package com.example.zonas.services;
 
+import com.example.zonas.cache.CacheService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.example.zonas.dto.request.EspacioRequestDto;
 import com.example.zonas.dto.response.EspacioResponseDto;
 import com.example.zonas.entidades.Espacio;
@@ -26,13 +28,34 @@ public class ServicesEspacio implements EspacioService {
     private final EspacioRepositorio espacioRepositorio;
     private final ZonaRepositorio zonaRepositorio;
     private final EspacioSseService espacioSseService;
+    private final CacheService cacheService;
 
     @Override
     @Transactional(readOnly = true)
     public List<EspacioResponseDto> obtenerEspacios() {
-        return espacioRepositorio.findAll().stream()
-                .map(mapper::toEspacioResponseDto)
-                .collect(Collectors.toList());
+        String cacheKey = "espacios:all";
+
+        List<EspacioResponseDto> espaciosCache =
+                cacheService.get(
+                        cacheKey,
+                        new TypeReference<
+                                List<EspacioResponseDto>
+                        >() {}
+                );
+
+        if (espaciosCache != null) {
+            return espaciosCache;
+        }
+
+        List<EspacioResponseDto> espacios =
+                espacioRepositorio.findAll()
+                        .stream()
+                        .map(mapper::toEspacioResponseDto)
+                        .collect(Collectors.toList());
+
+        cacheService.set(cacheKey, espacios, 30);
+
+        return espacios;
     }
 
     @Override
@@ -59,7 +82,32 @@ public class ServicesEspacio implements EspacioService {
         espacio.setFechaCreacion(LocalDateTime.now());
         espacio.setFechaActualizacion(LocalDateTime.now());
 
-        return mapper.toEspacioResponseDto(espacioRepositorio.save(espacio));
+        Espacio espacioGuardado =
+        espacioRepositorio.save(espacio);
+
+        EspacioResponseDto response =
+                mapper.toEspacioResponseDto(
+                        espacioGuardado
+                );
+
+        cacheService.set(
+                "espacios:id:" + espacioGuardado.getId(),
+                response,
+                60
+        );
+
+        cacheService.delete("espacios:all");
+
+        cacheService.delete(
+                "espacios:zona:" + zona.getId()
+        );
+
+        cacheService.delete(
+                "espacios:estado:"
+                        + EstadoEspacio.DISPONIBLE.name()
+        );
+
+        return response;
     }
 
     @Override
@@ -89,7 +137,32 @@ public class ServicesEspacio implements EspacioService {
         }
 
         espacio.setFechaActualizacion(LocalDateTime.now());
-        return mapper.toEspacioResponseDto(espacioRepositorio.save(espacio));
+
+        Espacio espacioActualizado =
+        espacioRepositorio.save(espacio);
+
+        EspacioResponseDto response =
+                mapper.toEspacioResponseDto(
+                        espacioActualizado
+                );
+
+        cacheService.set(
+                "espacios:id:"
+                        + espacioActualizado.getId(),
+                response,
+                60
+        );
+
+        cacheService.delete("espacios:all");
+
+        cacheService.delete(
+                "espacios:zona:"
+                        + espacioActualizado
+                                .getZona()
+                                .getId()
+        );
+
+        return response;
     }
 
     @Override
@@ -100,7 +173,23 @@ public class ServicesEspacio implements EspacioService {
 
         espacio.setActivo(false);
         espacio.setFechaActualizacion(LocalDateTime.now());
-        espacioRepositorio.save(espacio);
+
+        Espacio espacioActualizado =
+                espacioRepositorio.save(espacio);
+
+        cacheService.delete(
+                "espacios:id:"
+                        + espacioActualizado.getId()
+        );
+
+        cacheService.delete("espacios:all");
+
+        cacheService.delete(
+                "espacios:zona:"
+                        + espacioActualizado
+                                .getZona()
+                                .getId()
+        );    
     }
 
     @Override
@@ -113,30 +202,115 @@ public class ServicesEspacio implements EspacioService {
         espacio.setActivo(estado != EstadoEspacio.MANTENIMIENTO);
         espacio.setFechaActualizacion(LocalDateTime.now());
 
-        EspacioResponseDto response = mapper.toEspacioResponseDto(espacioRepositorio.save(espacio));
+        Espacio espacioActualizado =
+        espacioRepositorio.save(espacio);
+
+        EspacioResponseDto response =
+                mapper.toEspacioResponseDto(
+                        espacioActualizado
+                );
+
+        cacheService.set(
+                "espacios:id:"
+                        + espacioActualizado.getId(),
+                response,
+                60
+        );
+
+        cacheService.delete("espacios:all");
+
+        cacheService.delete(
+                "espacios:zona:"
+                        + espacioActualizado
+                                .getZona()
+                                .getId()
+        );
+
+        cacheService.delete(
+                "espacios:estado:"
+                        + estado.name()
+        );
+
         espacioSseService.emitirCambioEstado(response);
+
         return response;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<EspacioResponseDto> obtenerEspaciosPorEstado(String estado) {
-        EstadoEspacio estadoEnum = parseEstado(estado);
-        return espacioRepositorio.findByEstado(estadoEnum).stream()
-                .map(mapper::toEspacioResponseDto)
-                .collect(Collectors.toList());
+    public List<EspacioResponseDto>
+    obtenerEspaciosPorEstado(String estado) {
+        EstadoEspacio estadoEnum =
+                parseEstado(estado);
+
+        String cacheKey =
+                "espacios:estado:" + estadoEnum.name();
+
+        List<EspacioResponseDto> espaciosCache =
+                cacheService.get(
+                        cacheKey,
+                        new TypeReference<
+                                List<EspacioResponseDto>
+                        >() {}
+                );
+
+        if (espaciosCache != null) {
+            return espaciosCache;
+        }
+
+        List<EspacioResponseDto> espacios =
+                espacioRepositorio
+                        .findByEstado(estadoEnum)
+                        .stream()
+                        .map(mapper::toEspacioResponseDto)
+                        .collect(Collectors.toList());
+
+        cacheService.set(cacheKey, espacios, 30);
+
+        return espacios;
     }
+
+
 
     @Override
     @Transactional(readOnly = true)
-    public List<EspacioResponseDto> obtenerEspaciosPorZona(UUID idZona) {
-        Zona zona = zonaRepositorio.findById(idZona)
-                .orElseThrow(() -> new IllegalArgumentException("Zona no encontrada: " + idZona));
+    public List<EspacioResponseDto>
+    obtenerEspaciosPorZona(UUID idZona) {
+        String cacheKey =
+                "espacios:zona:" + idZona;
 
-        return espacioRepositorio.findByZonaId(zona.getId()).stream()
-                .map(mapper::toEspacioResponseDto)
-                .collect(Collectors.toList());
+        List<EspacioResponseDto> espaciosCache =
+                cacheService.get(
+                        cacheKey,
+                        new TypeReference<
+                                List<EspacioResponseDto>
+                        >() {}
+                );
+
+        if (espaciosCache != null) {
+            return espaciosCache;
+        }
+
+        Zona zona = zonaRepositorio.findById(idZona)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Zona no encontrada: "
+                                        + idZona
+                        )
+                );
+
+        List<EspacioResponseDto> espacios =
+                espacioRepositorio
+                        .findByZonaId(zona.getId())
+                        .stream()
+                        .map(mapper::toEspacioResponseDto)
+                        .collect(Collectors.toList());
+
+        cacheService.set(cacheKey, espacios, 30);
+
+        return espacios;
     }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -155,13 +329,42 @@ public class ServicesEspacio implements EspacioService {
         return String.format("%s-%03d", zona.getCodigo(), numero);
     }
 
+
     @Override
     @Transactional(readOnly = true)
-    public EspacioResponseDto obtenerEspacioPorId(UUID id) {
-        Espacio espacio = espacioRepositorio.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Espacio no encontrado: " + id));
-        return mapper.toEspacioResponseDto(espacio);
+    public EspacioResponseDto obtenerEspacioPorId(
+            UUID id
+    ) {
+        String cacheKey = "espacios:id:" + id;
+
+        EspacioResponseDto espacioCache =
+                cacheService.get(
+                        cacheKey,
+                        EspacioResponseDto.class
+                );
+
+        if (espacioCache != null) {
+            return espacioCache;
+        }
+
+        Espacio espacio =
+                espacioRepositorio.findById(id)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Espacio no encontrado: "
+                                                + id
+                                )
+                        );
+
+        EspacioResponseDto response =
+                mapper.toEspacioResponseDto(espacio);
+
+        cacheService.set(cacheKey, response, 60);
+
+        return response;
     }
+
+
 
     @Override
     @Transactional(readOnly = true)
