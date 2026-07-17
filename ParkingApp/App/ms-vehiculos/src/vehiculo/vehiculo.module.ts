@@ -37,14 +37,12 @@ import { CacheService } from '../common/cache.service';
       ) => ({
         store: await redisStore({
           host:
-            configService.get<string>(
-              'REDIS_HOST',
-            ) || 'localhost',
+            configService.get<string>('REDIS_HOST') ||
+            'localhost',
 
           port: Number(
-            configService.get<string>(
-              'REDIS_PORT',
-            ) || 6379,
+            configService.get<string>('REDIS_PORT') ||
+              6379,
           ),
         }),
 

@@ -37,7 +37,7 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - parking-network- parking-network
+      - parking-network
 
 
 
@@ -88,6 +88,10 @@ services:
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
       RABBITMQ_EXCHANGE: audit-exchange
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
     networks:
       - parking-network
     depends_on:
@@ -140,8 +144,13 @@ services:
       RABBITMQ_EXCHANGE: audit-exchange
       RABBITMQ_ROUTING_KEY: audit.vehiculo.create
       JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379    
+    
     networks:
       - parking-network
+      
     depends_on:
       - postgres
       - rabbitmq
@@ -169,6 +178,10 @@ services:
       RABBITMQ_EXCHANGE: audit-exchange
       RABBITMQ_QUEUE: audit-queue
       JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    
     networks:
       - parking-network
     depends_on:
