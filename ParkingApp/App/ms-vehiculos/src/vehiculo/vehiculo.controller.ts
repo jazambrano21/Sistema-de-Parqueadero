@@ -1,22 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { VehiculosService } from './services/vehiculos.service';
 import { CreateVehiculoDto } from './dto/create-vehiculo.dto';
 import { UpdateVehiculoDto } from './dto/update-vehiculo.dto';
-import { JwtAuthGuard } from '../auth/jwt.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
 
-/**
- * Todos los endpoints de vehículos requieren ROLE_ADMIN.
- * Solo los administradores pueden registrar, ver o eliminar vehículos.
- */
 @ApiTags('vehiculos')
-@ApiBearerAuth()
 @Controller('vehiculo')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ROLE_ADMIN')
 export class VehiculoController {
   constructor(private readonly vehiculoService: VehiculosService) {}
 

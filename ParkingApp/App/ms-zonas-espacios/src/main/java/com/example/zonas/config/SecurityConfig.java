@@ -37,7 +37,8 @@ public class SecurityConfig {
                     "/swagger-ui.html"
                 ).permitAll()
 
-                .anyRequest().authenticated()
+                // Todo público para pruebas
+                .anyRequest().permitAll()
             );
 
         return http.build();

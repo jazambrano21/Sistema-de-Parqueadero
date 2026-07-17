@@ -13,35 +13,36 @@ import ec.edu.espe.usuarios.repository.RoleRepository;
 import ec.edu.espe.usuarios.repository.UserRepository;
 import ec.edu.espe.usuarios.repository.UserRoleRepository;
 import ec.edu.espe.usuarios.services.UserService;
-import org.springframework.http.HttpStatus;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PersonRepository personRepository;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
 
-    @Autowired
-    private PersonRepository personRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private UserRoleRepository userRoleRepository;
-
+    // ─────────────────────────────────────────────
+    // CREATE — invalida lista de usuarios
+    // ─────────────────────────────────────────────
     @Override
+    @CacheEvict(value = "usuarios", allEntries = true)
     public UserResponse createUser(UserCreateRequest userRequest) {
         if (personRepository.existsByEmail(userRequest.getEmail()))
             throw new IllegalArgumentException("El correo ya esta registrado");
@@ -64,7 +65,10 @@ public class UserServiceImpl implements UserService {
         User user = User.builder()
                 .id(person.getId())
                 .person(person)
-                .username(generateUsername(userRequest.getFirstName(), userRequest.getMiddleName(), userRequest.getLastName()))
+                .username(generateUsername(
+                        userRequest.getFirstName(),
+                        userRequest.getMiddleName(),
+                        userRequest.getLastName()))
                 .passwordHash(userRequest.getDni())
                 .build();
 
@@ -72,32 +76,55 @@ public class UserServiceImpl implements UserService {
         return mapToUserResponse(user);
     }
 
+    // ─────────────────────────────────────────────
+    // GET ALL — cacheable 5 min
+    // ─────────────────────────────────────────────
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "usuarios", key = "'all'")
     public List<UserResponse> getUsers() {
+        log.info("getUsers → CACHE MISS — consultando BD");
         return userRepository.findAllWithPerson().stream()
                 .map(this::mapToUserResponse)
                 .collect(Collectors.toList());
     }
 
+    // ─────────────────────────────────────────────
+    // GET ONE por ID — cacheable 5 min
+    // ─────────────────────────────────────────────
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "usuario", key = "#id")
     public UserResponse getUserById(UUID id) {
+        log.info("getUserById({}) → CACHE MISS", id);
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado con id: " + id));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Usuario no encontrado con id: " + id));
         return mapToUserResponse(user);
     }
 
+    // ─────────────────────────────────────────────
+    // GET persona por DNI — cacheable 5 min (ms-tickets lo consulta frecuentemente)
+    // ─────────────────────────────────────────────
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "persona", key = "#dni")
     public PersonResponse getPersonByDni(String dni) {
+        log.info("getPersonByDni({}) → CACHE MISS", dni);
         Person person = personRepository.findByDni(dni)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Persona no encontrada con DNI: " + dni));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Persona no encontrada con DNI: " + dni));
         return mapToPersonResponse(person);
     }
 
+    // ─────────────────────────────────────────────
+    // ASSIGN ROLE — invalida usuario individual y lista
+    // ─────────────────────────────────────────────
     @Override
-    @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "usuario",   key = "#userId"),
+        @CacheEvict(value = "usuarios",  allEntries = true)
+    })
     public UserResponse assigneRole(UUID userId, UUID roleId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
@@ -109,7 +136,6 @@ public class UserServiceImpl implements UserService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El rol ya esta asignado al usuario");
 
         UserRoleId userRoleId = new UserRoleId(userId, roleId);
-
         UserRole userRole = UserRole.builder()
                 .id(userRoleId)
                 .user(user)
@@ -120,8 +146,9 @@ public class UserServiceImpl implements UserService {
         return mapToUserResponse(user);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
+    // ─────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────
     private String generateUsername(String firstName, String middleName, String lastName) {
         StringBuilder base = new StringBuilder();
         if (firstName != null && !firstName.isBlank()) base.append(firstName.substring(0, 1).toLowerCase());
@@ -131,12 +158,9 @@ public class UserServiceImpl implements UserService {
         String baseUsername = base.toString();
         String username = baseUsername;
         int counter = 1;
-
         while (userRepository.existsByUsername(username)) {
-            username = baseUsername + counter;
-            counter++;
+            username = baseUsername + counter++;
         }
-
         return username;
     }
 

@@ -1,22 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
-import { JwtAuthGuard } from '../auth/jwt.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
 import type { Request } from 'express';
 
-/**
- * Tickets requieren ROLE_ADMIN.
- * Solo los administradores pueden crear, ver y cerrar tickets.
- */
 @ApiTags('tickets')
-@ApiBearerAuth()
 @Controller('tickets')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ROLE_ADMIN')
 export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}
 

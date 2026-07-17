@@ -9,7 +9,11 @@ import com.example.zonas.repository.ZonaRepositorio;
 import com.example.zonas.services.interfaz.ZonaService;
 import com.example.zonas.utils.MapperUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ServicesZona implements ZonaService {
@@ -25,16 +30,38 @@ public class ServicesZona implements ZonaService {
     private final MapperUtils mapper;
     private final ZonaRepositorio zonaRepositorio;
 
+    // ─────────────────────────────────────────────
+    // GET ALL — cacheable 5 min
+    // ─────────────────────────────────────────────
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "zonas", key = "'all'")
     public List<ZonaResponseDto> listarZonas() {
+        log.info("listarZonas → CACHE MISS — consultando BD");
         return zonaRepositorio.findAll().stream()
                 .map(mapper::toZonaResponseDto)
                 .collect(Collectors.toList());
     }
 
+    // ─────────────────────────────────────────────
+    // BUSCAR por nombre — cacheable 5 min
+    // ─────────────────────────────────────────────
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = "zonas", key = "'buscar:' + #nombre")
+    public List<ZonaResponseDto> buscarZonas(String nombre) {
+        log.info("buscarZonas({}) → CACHE MISS", nombre);
+        return zonaRepositorio.findByNombreContainingIgnoreCase(nombre).stream()
+                .map(mapper::toZonaResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    // ─────────────────────────────────────────────
+    // CREATE — invalida lista de zonas
+    // ─────────────────────────────────────────────
     @Override
     @Transactional
+    @CacheEvict(value = "zonas", allEntries = true)
     public ZonaResponseDto crearZona(ZonaRequestDto requestDto) {
         String nombreNormalizado = generarNombreZona(requestDto.getNombre());
         if (zonaRepositorio.existsByNombre(nombreNormalizado)) {
@@ -52,8 +79,15 @@ public class ServicesZona implements ZonaService {
         return mapper.toZonaResponseDto(zonaRepositorio.save(zona));
     }
 
+    // ─────────────────────────────────────────────
+    // UPDATE — invalida zona individual y lista
+    // ─────────────────────────────────────────────
     @Override
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "zona",  key = "#idZone"),
+        @CacheEvict(value = "zonas", allEntries = true)
+    })
     public ZonaResponseDto actualizarZona(UUID idZone, ZonaRequestDto requestDto) {
         Zona zona = zonaRepositorio.findById(idZone)
                 .orElseThrow(() -> new IllegalArgumentException("No existe zona con id: " + idZone));
@@ -68,33 +102,39 @@ public class ServicesZona implements ZonaService {
         return mapper.toZonaResponseDto(zonaRepositorio.save(zona));
     }
 
+    // ─────────────────────────────────────────────
+    // DELETE — invalida zona individual y lista
+    // ─────────────────────────────────────────────
     @Override
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "zona",  key = "#id"),
+        @CacheEvict(value = "zonas", allEntries = true)
+    })
     public void eliminarZona(UUID id) {
         Zona zona = zonaRepositorio.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("No existe zona con id: " + id));
 
         if (zona.getEspacios() != null && !zona.getEspacios().isEmpty()) {
             boolean tieneEspaciosNoDisponibles = zona.getEspacios().stream()
-                    .anyMatch(espacio -> espacio.getEstado() != EstadoEspacio.DISPONIBLE);
+                    .anyMatch(e -> e.getEstado() != EstadoEspacio.DISPONIBLE);
             if (tieneEspaciosNoDisponibles) {
-                throw new IllegalStateException("No se puede eliminar la zona porque hay espacios ocupados, reservados o en mantenimiento");
+                throw new IllegalStateException(
+                        "No se puede eliminar la zona porque hay espacios ocupados, reservados o en mantenimiento"
+                );
             }
         }
 
         zonaRepositorio.delete(zona);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<ZonaResponseDto> buscarZonas(String nombre) {
-        return zonaRepositorio.findByNombreContainingIgnoreCase(nombre).stream()
-                .map(mapper::toZonaResponseDto)
-                .collect(Collectors.toList());
-    }
-
+    // ─────────────────────────────────────────────
+    // Helpers privados
+    // ─────────────────────────────────────────────
     private String generarCodigoZona(TipoZona tipo) {
-        String tipoPrefijo = tipo == TipoZona.GENERAL ? "GEN" : tipo.name().substring(0, Math.min(tipo.name().length(), 3));
+        String tipoPrefijo = tipo == TipoZona.GENERAL
+                ? "GEN"
+                : tipo.name().substring(0, Math.min(tipo.name().length(), 3));
         long cuenta = zonaRepositorio.countByTipo(tipo) + 1;
         return String.format("ZON-%s-%02d", tipoPrefijo, cuenta);
     }

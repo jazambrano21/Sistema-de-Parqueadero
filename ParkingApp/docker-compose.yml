@@ -83,11 +83,14 @@ services:
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
       RABBITMQ_EXCHANGE: audit-exchange
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     networks:
       - parking-network
     depends_on:
       - postgres
       - rabbitmq
+      - redis
 
   # Microservicio de Zonas y Espacios
   ms-zonas-espacios:
@@ -107,11 +110,14 @@ services:
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
       RABBITMQ_EXCHANGE: audit-exchange
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     networks:
       - parking-network
     depends_on:
       - postgres
       - rabbitmq
+      - redis
 
   # Microservicio de Vehículos
   ms-vehiculos:
@@ -134,11 +140,14 @@ services:
       RABBITMQ_EXCHANGE: audit-exchange
       RABBITMQ_ROUTING_KEY: audit.vehiculo.create
       JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     networks:
       - parking-network
     depends_on:
       - postgres
       - rabbitmq
+      - redis
       - ms-usuarios-roles-oauth
 
   # Microservicio de Auditoría
@@ -162,11 +171,14 @@ services:
       RABBITMQ_EXCHANGE: audit-exchange
       RABBITMQ_QUEUE: audit-queue
       JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     networks:
       - parking-network
     depends_on:
       - postgres
       - rabbitmq
+      - redis
 
   # Microservicio de Tickets
   ms-tickets:

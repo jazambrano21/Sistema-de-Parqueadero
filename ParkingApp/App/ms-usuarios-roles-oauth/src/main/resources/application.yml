@@ -5,6 +5,9 @@ spring:
   application:
     name: ms-usuarios-roles-oauth
 
+  main:
+    allow-bean-definition-overriding: true
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/usuarios_db}
     username: ${DB_USERNAME:postgres}
@@ -34,6 +37,11 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 oauth:
   server:
