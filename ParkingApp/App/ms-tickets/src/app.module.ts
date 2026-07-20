@@ -8,10 +8,7 @@ import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -28,7 +25,7 @@ import { HealthController } from './health/health.controller';
       }),
     }),
     AuthModule,
-    TicketsModule, // CacheModule se registra dentro de TicketsModule
+    TicketsModule,
   ],
   controllers: [HealthController],
 })
