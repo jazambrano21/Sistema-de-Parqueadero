@@ -1,22 +1,111 @@
-/* Colores según estado */
-.bg-disponible {
-    background-color: #d1fae5; /* verde claro */
-    border-left: 6px solid #10b981;
+/* ── Navbar buttons ── */
+.nav-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: #dbeafe;
 }
-.bg-ocupado {
-    background-color: #fee2e2; /* rojo claro */
-    border-left: 6px solid #ef4444;
+.nav-btn:hover  { background: rgba(255,255,255,0.15); color: #fff; }
+.nav-btn.active { background: rgba(255,255,255,0.25); color: #fff; font-weight: 700; }
+
+/* ── Common buttons ── */
+.btn-primary {
+    background: #2563eb; color: #fff;
+    padding: 8px 18px; border-radius: 6px;
+    font-size: 0.875rem; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
 }
-.bg-reservado {
-    background-color: #fef3c7; /* amarillo claro */
-    border-left: 6px solid #f59e0b;
+.btn-primary:hover  { background: #1d4ed8; }
+.btn-secondary {
+    background: #e5e7eb; color: #374151;
+    padding: 8px 18px; border-radius: 6px;
+    font-size: 0.875rem; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+}
+.btn-secondary:hover { background: #d1d5db; }
+.btn-danger {
+    background: #ef4444; color: #fff;
+    padding: 5px 12px; border-radius: 5px;
+    font-size: 0.8rem; font-weight: 600;
+    cursor: pointer;
+}
+.btn-danger:hover { background: #dc2626; }
+.btn-edit {
+    background: #f59e0b; color: #fff;
+    padding: 5px 12px; border-radius: 5px;
+    font-size: 0.8rem; font-weight: 600;
+    cursor: pointer;
+}
+.btn-edit:hover { background: #d97706; }
+.btn-sm {
+    padding: 4px 10px; border-radius: 5px;
+    font-size: 0.78rem; font-weight: 600;
+    cursor: pointer;
 }
 
-/* Transición suave al cambiar estado */
-.espacio-card {
-    transition: all 0.3s ease;
+/* ── Tables ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.data-table th {
+    background: #f3f4f6; text-align: left;
+    padding: 10px 12px; font-weight: 700;
+    color: #374151; border-bottom: 2px solid #e5e7eb;
 }
+.data-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #4b5563;
+}
+.data-table tr:hover td { background: #f9fafb; }
+
+/* ── Modals ── */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 16px;
+}
+.modal-box {
+    background: #fff; border-radius: 10px;
+    padding: 28px; width: 100%; max-width: 480px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+.modal-title { font-size: 1.2rem; font-weight: 700; color: #111827; margin-bottom: 16px; }
+.modal-label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin: 10px 0 4px; }
+.modal-input {
+    width: 100%; border: 1px solid #d1d5db;
+    border-radius: 6px; padding: 8px 10px;
+    font-size: 0.875rem; outline: none;
+    transition: border 0.15s;
+    box-sizing: border-box;
+}
+.modal-input:focus { border-color: #2563eb; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+/* ── Badges ── */
+.badge {
+    display: inline-block; padding: 2px 10px;
+    border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+}
+.badge-green  { background: #d1fae5; color: #065f46; }
+.badge-red    { background: #fee2e2; color: #991b1b; }
+.badge-yellow { background: #fef3c7; color: #92400e; }
+.badge-blue   { background: #dbeafe; color: #1e40af; }
+.badge-gray   { background: #f3f4f6; color: #374151; }
+
+/* ── Space cards ── */
+.espacio-card { transition: all 0.3s ease; }
 .espacio-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
 }
+
+/* ── Empty state ── */
+.empty-state {
+    text-align: center; padding: 48px 16px;
+    color: #9ca3af;
+}
+.empty-state svg { margin: 0 auto 12px; }
