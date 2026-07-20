@@ -33,21 +33,24 @@ services:
 
   # Microservicio de Tickets
   - name: tickets-service
-    url: http://ms-tickets:3001
+    url: http://ms-tickets:3002
     routes:
       - name: tickets-route
         paths:
           - /tickets
         strip_path: false
 
-plugins:
-  # JWT Authentication Plugin
-  - name: jwt
-    config:
-      claims_to_verify:
-        - roles
+  # Microservicio de Auditoría
+  - name: audit-service
+    url: http://ms-audit:3001
+    routes:
+      - name: audit-route
+        paths:
+          - /audit
+        strip_path: false
 
-  # CORS Plugin
+plugins:
+  # CORS Plugin — aplica globalmente
   - name: cors
     config:
       origins:

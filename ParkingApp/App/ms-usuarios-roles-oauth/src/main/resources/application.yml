@@ -5,7 +5,6 @@ spring:
         password: ${DB_PASSWORD:12345678}
         driver-class-name: org.postgresql.Driver
 
-<<<<<<< Updated upstream
     jpa:
         hibernate:
           ddl-auto: update
@@ -14,13 +13,6 @@ spring:
           hibernate:
             dialect: org.hibernate.dialect.PostgreSQLDialect
             format_sql: true
-=======
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/usuarios_db}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:12345678}
-    driver-class-name: org.postgresql.Driver
->>>>>>> Stashed changes
 
     sql:
         init:
@@ -33,10 +25,10 @@ spring:
                     jwk-set-uri: http://localhost:8082/oauth2/jwks
 
     rabbitmq:
-        host: host.docker.internal
-        port: 5672
-        username: guest
-        password: guest 
+        host: ${SPRING_RABBITMQ_HOST:localhost}
+        port: ${SPRING_RABBITMQ_PORT:5672}
+        username: ${SPRING_RABBITMQ_USERNAME:guest}
+        password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
 server:
     port: 8082
