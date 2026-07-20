@@ -1,5 +1,7 @@
 package com.example.zonas.services;
 
+import com.example.zonas.cache.CacheService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.example.zonas.dto.request.ZonaRequestDto;
 import com.example.zonas.dto.response.ZonaResponseDto;
 import com.example.zonas.entidades.EstadoEspacio;
@@ -29,6 +31,7 @@ public class ServicesZona implements ZonaService {
 
     private final MapperUtils mapper;
     private final ZonaRepositorio zonaRepositorio;
+    private final CacheService cacheService;
 
     // ─────────────────────────────────────────────
     // GET ALL — cacheable 5 min
@@ -41,6 +44,10 @@ public class ServicesZona implements ZonaService {
         return zonaRepositorio.findAll().stream()
                 .map(mapper::toZonaResponseDto)
                 .collect(Collectors.toList());
+
+        cacheService.set(cacheKey, zonas, 60);
+
+        return zonas;
     }
 
     // ─────────────────────────────────────────────
@@ -76,7 +83,20 @@ public class ServicesZona implements ZonaService {
         zona.setFechaCreacion(LocalDateTime.now());
         zona.setFechaActualizacion(LocalDateTime.now());
 
-        return mapper.toZonaResponseDto(zonaRepositorio.save(zona));
+        Zona zonaGuardada = zonaRepositorio.save(zona);
+
+        ZonaResponseDto response =
+                mapper.toZonaResponseDto(zonaGuardada);
+
+        cacheService.set(
+                "zonas:id:" + zonaGuardada.getId(),
+                response,
+                300
+        );
+
+        cacheService.delete("zonas:all");
+
+        return response;    
     }
 
     // ─────────────────────────────────────────────
@@ -99,7 +119,20 @@ public class ServicesZona implements ZonaService {
         BeanUtils.copyProperties(requestDto, zona, "id", "fechaCreacion", "activo", "estado", "codigo");
         zona.setFechaActualizacion(LocalDateTime.now());
 
-        return mapper.toZonaResponseDto(zonaRepositorio.save(zona));
+        Zona zonaActualizada = zonaRepositorio.save(zona);
+
+        ZonaResponseDto response =
+                mapper.toZonaResponseDto(zonaActualizada);
+
+        cacheService.set(
+                "zonas:id:" + zonaActualizada.getId(),
+                response,
+                300
+        );
+
+        cacheService.delete("zonas:all");
+
+        return response;
     }
 
     // ─────────────────────────────────────────────
@@ -126,6 +159,9 @@ public class ServicesZona implements ZonaService {
         }
 
         zonaRepositorio.delete(zona);
+
+        cacheService.delete("zonas:id:" + id);
+        cacheService.delete("zonas:all");
     }
 
     // ─────────────────────────────────────────────

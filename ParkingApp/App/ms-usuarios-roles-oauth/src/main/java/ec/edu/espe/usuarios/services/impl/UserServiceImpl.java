@@ -1,5 +1,7 @@
 package ec.edu.espe.usuarios.services.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import ec.edu.espe.usuarios.cache.CacheService;
 import ec.edu.espe.usuarios.dto.request.UserCreateRequest;
 import ec.edu.espe.usuarios.dto.response.PersonResponse;
 import ec.edu.espe.usuarios.dto.response.UserResponse;
@@ -73,7 +75,32 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         user = userRepository.save(user);
-        return mapToUserResponse(user);
+
+        UserResponse response =
+                mapToUserResponse(user);
+
+        cacheService.set(
+                "usuarios:id:" + user.getId(),
+                response,
+                300
+        );
+
+        cacheService.set(
+                "personas:dni:" + person.getDni(),
+                mapToPersonResponse(person),
+                300
+        );
+
+        cacheService.delete(
+                "usuarios:all"
+        );
+
+        log.info(
+                "Usuario {} creado y caché actualizada",
+                user.getId()
+        );
+
+        return response;
     }
 
     // ─────────────────────────────────────────────
@@ -129,11 +156,25 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Rol no encontrado"));
+        Role role =
+                roleRepository.findById(roleId)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Rol no encontrado"
+                                )
+                        );
 
-        if (userRoleRepository.existsByUserIdAndRoleId(userId, roleId))
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El rol ya esta asignado al usuario");
+        if (userRoleRepository
+                .existsByUserIdAndRoleId(
+                        userId,
+                        roleId
+                )) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El rol ya esta asignado al usuario"
+            );
+        }
 
         UserRoleId userRoleId = new UserRoleId(userId, roleId);
         UserRole userRole = UserRole.builder()
@@ -143,7 +184,42 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         userRoleRepository.save(userRole);
-        return mapToUserResponse(user);
+
+        User userActualizado =
+                userRepository.findById(userId)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Usuario no encontrado"
+                                )
+                        );
+
+        UserResponse response =
+                mapToUserResponse(
+                        userActualizado
+                );
+
+        cacheService.delete(
+                "usuarios:id:" + userId
+        );
+
+        cacheService.delete(
+                "usuarios:all"
+        );
+
+        cacheService.set(
+                "usuarios:id:" + userId,
+                response,
+                300
+        );
+
+        log.info(
+                "Rol {} asignado al usuario {} y caché invalidada",
+                roleId,
+                userId
+        );
+
+        return response;
     }
 
     // ─────────────────────────────────────────────
@@ -155,8 +231,6 @@ public class UserServiceImpl implements UserService {
         if (middleName != null && !middleName.isBlank()) base.append(middleName.substring(0, 1).toLowerCase());
         if (lastName != null && !lastName.isBlank()) base.append(lastName.toLowerCase());
 
-        String baseUsername = base.toString();
-        String username = baseUsername;
         int counter = 1;
         while (userRepository.existsByUsername(username)) {
             username = baseUsername + counter++;
@@ -164,19 +238,30 @@ public class UserServiceImpl implements UserService {
         return username;
     }
 
-    private UserResponse mapToUserResponse(User user) {
+    private UserResponse mapToUserResponse(
+            User user
+    ) {
         return UserResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .active(user.getActive())
                 .lastLogin(user.getLastLogin())
                 .createdAt(user.getCreatedAt())
-                .person(mapToPersonResponse(user.getPerson()))
+                .person(
+                        mapToPersonResponse(
+                                user.getPerson()
+                        )
+                )
                 .build();
     }
 
-    private PersonResponse mapToPersonResponse(Person person) {
-        if (person == null) return null;
+    private PersonResponse mapToPersonResponse(
+            Person person
+    ) {
+        if (person == null) {
+            return null;
+        }
+
         return PersonResponse.builder()
                 .id(person.getId())
                 .dni(person.getDni())

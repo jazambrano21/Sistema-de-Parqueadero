@@ -5,6 +5,7 @@ import { TicketsService } from './tickets.service';
 import { TicketsController } from './tickets.controller';
 import { HttpClientService } from './common/http-client.service';
 import { Ticket } from './entities/ticket.entity';
+
 import { RolesGuard } from '../auth/roles.guard';
 import { EventPublisherService } from '../common/event-publisher.service';
 import { CacheService } from '../common/cache.service';
@@ -14,7 +15,11 @@ import { CacheService } from '../common/cache.service';
     TypeOrmModule.forFeature([Ticket]),
     ConfigModule,
   ],
-  controllers: [TicketsController],
+
+  controllers: [
+    TicketsController,
+  ],
+
   providers: [
     TicketsService,
     HttpClientService,

@@ -5,11 +5,19 @@ import { UpdateAuditDto } from './dto/update-audit.dto';
 
 @Controller('audit')
 export class AuditController {
-  constructor(private readonly auditService: AuditService) {}
+  constructor(
+    private readonly auditService:
+      AuditService,
+  ) {}
 
   @Post()
-  create(@Body() createAuditDto: CreateAuditDto) {
-    return this.auditService.create(createAuditDto);
+  create(
+    @Body()
+    createAuditDto: CreateAuditDto,
+  ) {
+    return this.auditService.create(
+      createAuditDto,
+    );
   }
 
   @Get()
@@ -18,17 +26,32 @@ export class AuditController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(
+    @Param('id')
+    id: string,
+  ) {
     return this.auditService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuditDto: UpdateAuditDto) {
-    return this.auditService.update(+id, updateAuditDto);
+  update(
+    @Param('id')
+    id: string,
+
+    @Body()
+    updateAuditDto: UpdateAuditDto,
+  ) {
+    return this.auditService.update(
+      id,
+      updateAuditDto,
+    );
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.auditService.remove(+id);
+  remove(
+    @Param('id')
+    id: string,
+  ) {
+    return this.auditService.remove(id);
   }
 }

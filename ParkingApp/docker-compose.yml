@@ -31,6 +31,11 @@ services:
   redis:
     image: redis:7-alpine
     container_name: parking-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
     networks:
       - parking-network
 
@@ -144,6 +149,7 @@ services:
       REDIS_PORT: 6379
     networks:
       - parking-network
+      
     depends_on:
       - postgres
       - rabbitmq
@@ -224,3 +230,4 @@ networks:
 
 volumes:
   postgres-data:
+  redis-data:

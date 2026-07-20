@@ -1,5 +1,7 @@
 package com.example.zonas.services;
 
+import com.example.zonas.cache.CacheService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.example.zonas.dto.request.EspacioRequestDto;
 import com.example.zonas.dto.response.EspacioResponseDto;
 import com.example.zonas.entidades.Espacio;
@@ -31,6 +33,7 @@ public class ServicesEspacio implements EspacioService {
     private final EspacioRepositorio espacioRepositorio;
     private final ZonaRepositorio zonaRepositorio;
     private final EspacioSseService espacioSseService;
+    private final CacheService cacheService;
 
     // ─────────────────────────────────────────────
     // GET ALL — cacheable 30s (lista grande)
@@ -149,7 +152,32 @@ public class ServicesEspacio implements EspacioService {
         espacio.setFechaCreacion(LocalDateTime.now());
         espacio.setFechaActualizacion(LocalDateTime.now());
 
-        return mapper.toEspacioResponseDto(espacioRepositorio.save(espacio));
+        Espacio espacioGuardado =
+        espacioRepositorio.save(espacio);
+
+        EspacioResponseDto response =
+                mapper.toEspacioResponseDto(
+                        espacioGuardado
+                );
+
+        cacheService.set(
+                "espacios:id:" + espacioGuardado.getId(),
+                response,
+                60
+        );
+
+        cacheService.delete("espacios:all");
+
+        cacheService.delete(
+                "espacios:zona:" + zona.getId()
+        );
+
+        cacheService.delete(
+                "espacios:estado:"
+                        + EstadoEspacio.DISPONIBLE.name()
+        );
+
+        return response;
     }
 
     // ─────────────────────────────────────────────
@@ -186,7 +214,32 @@ public class ServicesEspacio implements EspacioService {
         }
 
         espacio.setFechaActualizacion(LocalDateTime.now());
-        return mapper.toEspacioResponseDto(espacioRepositorio.save(espacio));
+
+        Espacio espacioActualizado =
+        espacioRepositorio.save(espacio);
+
+        EspacioResponseDto response =
+                mapper.toEspacioResponseDto(
+                        espacioActualizado
+                );
+
+        cacheService.set(
+                "espacios:id:"
+                        + espacioActualizado.getId(),
+                response,
+                60
+        );
+
+        cacheService.delete("espacios:all");
+
+        cacheService.delete(
+                "espacios:zona:"
+                        + espacioActualizado
+                                .getZona()
+                                .getId()
+        );
+
+        return response;
     }
 
     // ─────────────────────────────────────────────
@@ -205,7 +258,23 @@ public class ServicesEspacio implements EspacioService {
                 .orElseThrow(() -> new IllegalArgumentException("Espacio no encontrado: " + id));
         espacio.setActivo(false);
         espacio.setFechaActualizacion(LocalDateTime.now());
-        espacioRepositorio.save(espacio);
+
+        Espacio espacioActualizado =
+                espacioRepositorio.save(espacio);
+
+        cacheService.delete(
+                "espacios:id:"
+                        + espacioActualizado.getId()
+        );
+
+        cacheService.delete("espacios:all");
+
+        cacheService.delete(
+                "espacios:zona:"
+                        + espacioActualizado
+                                .getZona()
+                                .getId()
+        );    
     }
 
     // ─────────────────────────────────────────────
@@ -227,8 +296,37 @@ public class ServicesEspacio implements EspacioService {
         espacio.setActivo(estado != EstadoEspacio.MANTENIMIENTO);
         espacio.setFechaActualizacion(LocalDateTime.now());
 
-        EspacioResponseDto response = mapper.toEspacioResponseDto(espacioRepositorio.save(espacio));
+        Espacio espacioActualizado =
+        espacioRepositorio.save(espacio);
+
+        EspacioResponseDto response =
+                mapper.toEspacioResponseDto(
+                        espacioActualizado
+                );
+
+        cacheService.set(
+                "espacios:id:"
+                        + espacioActualizado.getId(),
+                response,
+                60
+        );
+
+        cacheService.delete("espacios:all");
+
+        cacheService.delete(
+                "espacios:zona:"
+                        + espacioActualizado
+                                .getZona()
+                                .getId()
+        );
+
+        cacheService.delete(
+                "espacios:estado:"
+                        + estado.name()
+        );
+
         espacioSseService.emitirCambioEstado(response);
+
         return response;
     }
 

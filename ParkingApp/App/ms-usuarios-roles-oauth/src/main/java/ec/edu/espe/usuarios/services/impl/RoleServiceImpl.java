@@ -1,5 +1,7 @@
 package ec.edu.espe.usuarios.services.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import ec.edu.espe.usuarios.cache.CacheService;
 import ec.edu.espe.usuarios.dto.request.RoleCreateRequest;
 import ec.edu.espe.usuarios.dto.response.RoleResponse;
 import ec.edu.espe.usuarios.entity.Role;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepository;
+    private final CacheService cacheService;
 
     // ─────────────────────────────────────────────
     // CREATE — invalida lista
@@ -31,7 +34,9 @@ public class RoleServiceImpl implements RoleService {
     public RoleResponse createRole(RoleCreateRequest request) {
         Role role = Role.builder()
                 .name(request.getName())
-                .description(request.getDescription())
+                .description(
+                        request.getDescription()
+                )
                 .build();
         return mapToResponse(roleRepository.save(role));
     }
@@ -84,14 +89,34 @@ public class RoleServiceImpl implements RoleService {
         if (!roleRepository.existsById(id)) {
             throw new RuntimeException("Role not found with id: " + id);
         }
-        roleRepository.deleteById(id);
+
+        log.info(
+                "getAllRoles -> CACHE MISS - consultando base de datos"
+        );
+
+        List<RoleResponse> roles =
+                roleRepository
+                        .findAll()
+                        .stream()
+                        .map(this::mapToResponse)
+                        .collect(Collectors.toList());
+
+        cacheService.set(
+                cacheKey,
+                roles,
+                300
+        );
+
+        return roles;
     }
 
     private RoleResponse mapToResponse(Role role) {
         return RoleResponse.builder()
                 .id(role.getId())
                 .name(role.getName())
-                .description(role.getDescription())
+                .description(
+                        role.getDescription()
+                )
                 .active(role.getActive())
                 .createdAt(role.getCreatedAt())
                 .updatedAt(role.getUpdatedAt())

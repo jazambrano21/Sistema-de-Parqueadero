@@ -7,6 +7,7 @@ import { Vehiculo } from './entities/vehiculo.entity';
 import { Auto } from './entities/auto.entity';
 import { Motocicleta } from './entities/motocicleta.entity';
 import { Camioneta } from './entities/camioneta.entity';
+
 import { RolesGuard } from '../auth/roles.guard';
 import { EventPublisherService } from '../common/event-publisher.service';
 import { CacheService } from '../common/cache.service';

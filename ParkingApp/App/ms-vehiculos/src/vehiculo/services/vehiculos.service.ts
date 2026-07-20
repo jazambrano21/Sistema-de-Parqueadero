@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Vehiculo } from '../entities/vehiculo.entity';
 import { Repository } from 'typeorm';
+
+import { Vehiculo } from '../entities/vehiculo.entity';
 import { CreateVehiculoDto } from '../dto/create-vehiculo.dto';
 import { UpdateVehiculoDto } from '../dto/update-vehiculo.dto';
 import { FactoryVehiculos } from '../factory/factory-vehiculos';
+
 import { EventPublisherService } from '../../common/event-publisher.service';
 import { CacheService } from '../../common/cache.service';
 
@@ -17,22 +19,52 @@ export class VehiculosService {
 
   constructor(
     @InjectRepository(Vehiculo)
-    private repositoryVehiculo: Repository<Vehiculo>,
+    private readonly repositoryVehiculo: Repository<Vehiculo>,
+
     private readonly eventPublisher: EventPublisherService,
     private readonly cacheService: CacheService,
   ) {}
 
-  async create(createVehiculoDto: CreateVehiculoDto, context?: any): Promise<Vehiculo> {
+  async create(
+    createVehiculoDto: CreateVehiculoDto,
+    context?: any,
+  ): Promise<Vehiculo> {
+    const placaNormalizada = createVehiculoDto.datos.placa
+      .trim()
+      .toUpperCase();
+
+    createVehiculoDto.datos.placa = placaNormalizada;
+
     const existe = await this.repositoryVehiculo.findOne({
-      where: { placa: createVehiculoDto.datos.placa },
+      where: {
+        placa: placaNormalizada,
+      },
     });
 
     if (existe) {
-      throw new Error(`Ya existe un vehículo con la placa ${createVehiculoDto.datos.placa}`);
+      throw new Error(
+        `Ya existe un vehículo con la placa ${placaNormalizada}`,
+      );
     }
 
     const vehiculo = FactoryVehiculos.crear(createVehiculoDto);
-    const savedVehiculo = await this.repositoryVehiculo.save(vehiculo);
+
+    const savedVehiculo =
+      await this.repositoryVehiculo.save(vehiculo);
+
+    await this.cacheService.set(
+      `vehiculos:id:${savedVehiculo.id}`,
+      savedVehiculo,
+      300000,
+    );
+
+    await this.cacheService.set(
+      `vehiculos:placa:${savedVehiculo.placa}`,
+      savedVehiculo,
+      300000,
+    );
+
+    await this.cacheService.del('vehiculos:all');
 
     // Cachear el vehículo recién creado y limpiar listas
     await this.cacheService.set(`vehiculo:id:${savedVehiculo.id}`, savedVehiculo, TTL_VEHICULO);
@@ -140,6 +172,7 @@ export class VehiculosService {
   // ─────────────────────────────────────────────
   async remove(id: string): Promise<void> {
     const vehiculo = await this.findOne(id);
+
     await this.repositoryVehiculo.remove(vehiculo);
 
     await this.cacheService.del(`vehiculo:id:${id}`);
@@ -152,7 +185,15 @@ export class VehiculosService {
   // ─────────────────────────────────────────────
   private resolveUser(context?: any): string {
     const user = context?.user;
-    return user?.username || user?.sub || user?.email || context?.username || context?.usuario || 'anonymous';
+
+    return (
+      user?.username ||
+      user?.sub ||
+      user?.email ||
+      context?.username ||
+      context?.usuario ||
+      'anonymous'
+    );
   }
 
   private resolveIp(context?: any): string {

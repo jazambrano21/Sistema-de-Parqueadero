@@ -5,6 +5,12 @@ spring:
   application:
     name: zonas-espacios
 
+    data:
+      redis:
+        host: ${REDIS_HOST:localhost}
+        port: ${REDIS_PORT:6379}
+        timeout: 2000ms 
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/zonas_db}
     username: ${DB_USERNAME:postgres}
