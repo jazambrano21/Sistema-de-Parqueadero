@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   # PostgreSQL Database
+  # POSTGRES_MULTIPLE_DATABASES: todos los schemas del sistema, incluyendo tenants_db
   postgres:
     image: postgres:15
     container_name: parking-postgres
@@ -9,10 +10,12 @@ services:
       POSTGRES_USER: postgrest
       POSTGRES_PASSWORD: qwerty12
       POSTGRES_DB: parking_db
+      POSTGRES_MULTIPLE_DATABASES: parking_db,usuarios_db,zonas_db,audit_db
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./init-postgres.sh:/docker-entrypoint-initdb.d/init-postgres.sh
     networks:
       - parking-network
 
@@ -25,20 +28,32 @@ services:
     networks:
       - parking-network
 
-
-
+  # Redis — caché compartida para todos los microservicios NestJS
+  redis:
+    image: redis:7-alpine
+    container_name: parking-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - parking-network
 
   # Kong API Gateway
   kong:
-    image: kong/kong-gateway:3.4.0
+    image: kong:3.4.0
     container_name: parking-kong
     environment:
       KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      # Habilitar el plugin request-transformer (viene incluido en Kong OSS)
+      KONG_PLUGINS: bundled
     ports:
       - "8000:8000"
       - "8443:8443"
@@ -53,8 +68,12 @@ services:
       - ms-zonas-espacios
       - ms-vehiculos
       - ms-tickets
+      - ms-audit
 
+  # ─────────────────────────────────────────────────────────────────────────
   # Microservicio de Usuarios con OAuth
+  # Gestiona tenants, usuarios, roles y emite JWT con claim tenantId
+  # ─────────────────────────────────────────────────────────────────────────
   ms-usuarios-roles-oauth:
     build:
       context: ./App/ms-usuarios-roles-oauth
@@ -66,12 +85,28 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/usuarios_db
       SPRING_DATASOURCE_USERNAME: postgrest
       SPRING_DATASOURCE_PASSWORD: qwerty12
+      # URL del propio servicio OAuth (usado como issuer en el JWT)
+      OAUTH_SERVER_URL: http://ms-usuarios-roles-oauth:8082
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_EXCHANGE: audit-exchange
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # JPA crea automáticamente la tabla tenants en usuarios_db
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     networks:
       - parking-network
     depends_on:
       - postgres
+      - rabbitmq
+      - redis
 
+  # ─────────────────────────────────────────────────────────────────────────
   # Microservicio de Zonas y Espacios
+  # Filtra zonas/espacios por tenantId extraído del JWT via TenantFilter
+  # ─────────────────────────────────────────────────────────────────────────
   ms-zonas-espacios:
     build:
       context: ./App/ms-zonas-espacios
@@ -83,19 +118,28 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/zonas_db
       DB_USERNAME: postgrest
       DB_PASSWORD: qwerty12
-      JWK_SET_URI: http://ms-usuarios-roles-oauth:9000/oauth2/jwks
+      JWK_SET_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: guest
       RABBITMQ_PASSWORD: guest
       RABBITMQ_EXCHANGE: audit-exchange
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # JPA agrega columna tenant_id a zonas y espacio
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     networks:
       - parking-network
     depends_on:
       - postgres
       - rabbitmq
+      - redis
+      - ms-usuarios-roles-oauth
 
+  # ─────────────────────────────────────────────────────────────────────────
   # Microservicio de Vehículos
+  # Filtra vehículos por tenantId extraído del JWT via Passport
+  # ─────────────────────────────────────────────────────────────────────────
   ms-vehiculos:
     build:
       context: ./App/ms-vehiculos
@@ -115,12 +159,52 @@ services:
       RABBITMQ_PASSWORD: guest
       RABBITMQ_EXCHANGE: audit-exchange
       RABBITMQ_ROUTING_KEY: audit.vehiculo.create
+      JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     networks:
       - parking-network
     depends_on:
       - postgres
+      - rabbitmq
+      - redis
+      - ms-usuarios-roles-oauth
 
+  # ─────────────────────────────────────────────────────────────────────────
+  # Microservicio de Auditoría
+  # ─────────────────────────────────────────────────────────────────────────
+  ms-audit:
+    build:
+      context: ./App/ms-audit
+      dockerfile: Dockerfile
+    container_name: ms-audit
+    ports:
+      - "3001:3001"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgrest
+      DB_PASSWORD: qwerty12
+      DB_NAME: audit_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_EXCHANGE: audit-exchange
+      RABBITMQ_QUEUE: audit-queue
+      JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    networks:
+      - parking-network
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  # ─────────────────────────────────────────────────────────────────────────
   # Microservicio de Tickets
+  # Filtra tickets por tenantId extraído del JWT via Passport
+  # ─────────────────────────────────────────────────────────────────────────
   ms-tickets:
     build:
       context: ./App/ms-tickets
@@ -144,10 +228,16 @@ services:
       RABBITMQ_PASSWORD: guest
       RABBITMQ_EXCHANGE: audit-exchange
       RABBITMQ_ROUTING_KEY: audit.ticket.create
+      JWKS_URI: http://ms-usuarios-roles-oauth:8082/.well-known/jwks.json
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TARIFA_HORA: 1.5
     networks:
       - parking-network
     depends_on:
       - postgres
+      - rabbitmq
+      - redis
       - ms-usuarios-roles-oauth
       - ms-vehiculos
       - ms-zonas-espacios
@@ -158,3 +248,4 @@ networks:
 
 volumes:
   postgres-data:
+  redis-data:

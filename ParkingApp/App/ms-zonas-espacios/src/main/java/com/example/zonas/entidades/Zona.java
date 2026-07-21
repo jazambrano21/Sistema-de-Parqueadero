@@ -58,5 +58,13 @@ public class Zona {
 
     @Column
     private LocalDateTime fechaActualizacion;
+
+    /**
+     * ID del tenant (parqueadero) al que pertenece esta zona.
+     * Permite que múltiples parqueaderos coexistan con datos aislados.
+     * Nullable para compatibilidad con registros anteriores a la implementación multitenant.
+     */
+    @Column(name = "tenant_id")
+    private String tenantId;
 }
 

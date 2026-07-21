@@ -54,4 +54,11 @@ public class Espacio {
 
     @Column
     private LocalDateTime fechaActualizacion;
+
+    /**
+     * ID del tenant (parqueadero) al que pertenece este espacio.
+     * Se hereda de la zona al crear el espacio.
+     */
+    @Column(name = "tenant_id")
+    private String tenantId;
 }

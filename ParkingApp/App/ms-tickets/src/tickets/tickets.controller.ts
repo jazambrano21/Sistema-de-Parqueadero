@@ -30,24 +30,26 @@ export class TicketsController {
   @ApiResponse({ status: 403, description: 'Requiere ROLE_ADMIN.' })
   create(@Body() createTicketDto: CreateTicketDto, @Req() req: Request) {
     return this.ticketsService.create(createTicketDto, req);
-}
+  }
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos los tickets', description: 'Retorna todos los tickets registrados.' })
+  @ApiOperation({ summary: 'Listar todos los tickets', description: 'Retorna todos los tickets del tenant actual.' })
   @ApiResponse({ status: 200, description: 'Lista de tickets retornada exitosamente.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'Requiere ROLE_ADMIN.' })
-  findAll() {
-    return this.ticketsService.findAll();
+  findAll(@Req() req: Request) {
+    const tenantId = (req as any).user?.tenantId ?? null;
+    return this.ticketsService.findAll(tenantId);
   }
 
   @Get('activos')
-  @ApiOperation({ summary: 'Listar tickets activos', description: 'Retorna los tickets de vehículos que aún están en el parqueadero.' })
+  @ApiOperation({ summary: 'Listar tickets activos', description: 'Retorna los tickets activos del tenant actual.' })
   @ApiResponse({ status: 200, description: 'Lista de tickets activos retornada.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'Requiere ROLE_ADMIN.' })
-  findActivos() {
-    return this.ticketsService.findActivos();
+  findActivos(@Req() req: Request) {
+    const tenantId = (req as any).user?.tenantId ?? null;
+    return this.ticketsService.findActivos(tenantId);
   }
 
   @Get(':id')
@@ -56,8 +58,9 @@ export class TicketsController {
   @ApiResponse({ status: 200, description: 'Ticket encontrado.' })
   @ApiResponse({ status: 404, description: 'Ticket no encontrado.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
-  findOne(@Param('id') id: string) {
-    return this.ticketsService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: Request) {
+    const tenantId = (req as any).user?.tenantId ?? null;
+    return this.ticketsService.findOne(id, tenantId);
   }
 
   @Patch(':id')

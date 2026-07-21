@@ -37,6 +37,15 @@ public class User {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * Tenant al que pertenece este usuario.
+     * Permite que el mismo sistema sirva a múltiples parqueaderos de forma aislada.
+     * Un usuario solo pertenece a un tenant.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", nullable = true)
+    private Tenant tenant;
+
     @PrePersist
     public void prePersist() {
         this.active = true;
