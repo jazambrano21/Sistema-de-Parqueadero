@@ -17,7 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 5,
-        jwksUri: process.env.JWKS_URI ?? 'http://ms-usuarios-roles-oauth:8082/oauth2/jwks',
+        jwksUri: 'http://localhost:9000/oauth2/jwks',
       }),
       algorithms: ['RS256'],
     });
@@ -27,6 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       username: payload.sub,
       roles: payload.roles ?? [],
+      tenantId: payload.tenantId ?? null,
     };
   }
 }

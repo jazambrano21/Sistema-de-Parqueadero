@@ -1,173 +1,119 @@
-name: Sistema de Parqueadero - CI/CD Pipeline
+name: CI - Tests, Sonar y Notificacion Telegram
 
 on:
   push:
-    branches: [master, dev, test]
+    branches:
+      - master
+      - dev
+      - test
   pull_request:
-    branches: [master, test]
-
-env:
-  JAVA_VERSION: '17'
-  MAVEN_OPTS: -Xmx2048m
+    branches:
+      - master
+      - test
 
 jobs:
 
-  # ── Build y Tests Java ────────────────────────────────────────────────────
-  build-and-test-java:
-    name: Build y Test - ${{ matrix.module }}
+  sonar-java:
+    name: Test y Sonar - Microservicios Java
     strategy:
       matrix:
         module: [ms-usuarios-roles-oauth, ms-zonas-espacios]
       fail-fast: false
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
-      - name: Checkout
+      - name: Descargar repositorio
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Configurar JDK ${{ env.JAVA_VERSION }}
+      - name: Configurar JDK
         uses: actions/setup-java@v4
         with:
-          java-version: ${{ env.JAVA_VERSION }}
+          java-version: '17'
           distribution: 'temurin'
-          cache: 'maven'
 
       - name: Cache Maven
         uses: actions/cache@v4
         with:
-          path: ~/.m2/repository
+          path: ~/.m2
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
-      - name: Build y Test
+      - name: Test y analisis Sonar
         working-directory: ParkingApp/App/${{ matrix.module }}
-        run: mvn clean verify -B ${{ env.MAVEN_OPTS }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
-      - name: Publicar resultados de tests
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: Tests Java - ${{ matrix.module }}
-          path: ParkingApp/App/${{ matrix.module }}/target/surefire-reports/*.xml
-          reporter: java-junit
-          fail-on-error: false
-
-  # ── Build y Tests NestJS ──────────────────────────────────────────────────
-  build-and-test-nestjs:
-    name: Build y Test - ${{ matrix.module }}
+  sonar-nestjs:
+    name: Test y Sonar - Microservicios NestJS
     strategy:
       matrix:
         module: [ms-tickets, ms-vehiculos]
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configurar Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Instalar dependencias
-        working-directory: ParkingApp/App/${{ matrix.module }}
-        run: npm install --legacy-peer-deps
-
-      - name: Ejecutar tests
-        working-directory: ParkingApp/App/${{ matrix.module }}
-        run: npm run test -- --passWithNoTests --forceExit
-
-  # ── Análisis SonarCloud ───────────────────────────────────────────────────
-  sonar-analysis:
-    name: Análisis SonarCloud
-    needs: [build-and-test-java, build-and-test-nestjs]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
+      - name: Descargar repositorio
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Configurar JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
+      - name: Configurar Node
+        uses: actions/setup-node@v4
         with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: 'maven'
+          node-version: '20'
 
-      - name: Cache SonarCloud
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar-
-
-      - name: Sonar - ms-usuarios-roles-oauth
-        working-directory: ParkingApp/App/ms-usuarios-roles-oauth
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Instalar dependencias y correr tests
+        working-directory: ParkingApp/App/${{ matrix.module }}
         run: |
-          mvn -B verify sonar:sonar \
-            -Dsonar.projectKey=jazambrano21_Sistema-de-Parqueadero \
-            -Dsonar.projectName="Sistema-de-Parqueadero" \
-            -Dsonar.organization=jazambrano21 \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            ${{ env.MAVEN_OPTS }} || echo "::warning::Sonar no bloqueante"
+          npm install
+          npm run test -- --coverage
 
-      - name: Sonar - ms-zonas-espacios
-        working-directory: ParkingApp/App/ms-zonas-espacios
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn -B verify sonar:sonar \
-            -Dsonar.projectKey=jazambrano21_Sistema-de-Parqueadero \
-            -Dsonar.projectName="Sistema-de-Parqueadero" \
-            -Dsonar.organization=jazambrano21 \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            ${{ env.MAVEN_OPTS }} || echo "::warning::Sonar no bloqueante"
-
-  # ── Notificación Telegram ─────────────────────────────────────────────────
-  notify-telegram:
-    name: Notificar en Telegram
-    needs: [build-and-test-java, build-and-test-nestjs, sonar-analysis]
+  sonar-frontend:
+    name: Test y Sonar - Frontend
     runs-on: ubuntu-latest
-    if: always()
     steps:
-      - name: Enviar notificación
-        run: |
-          JAVA="${{ needs.build-and-test-java.result }}"
-          NESTJS="${{ needs.build-and-test-nestjs.result }}"
-          SONAR="${{ needs.sonar-analysis.result }}"
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-          if [ "$JAVA" == "success" ] && [ "$NESTJS" == "success" ]; then
-            EMOJI="✅"
-            STATUS="EXITOSO"
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias y correr tests
+        working-directory: ParkingApp/Frontend
+        run: |
+          npm install
+          npm test -- --coverage
+
+      - name: Analisis SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: ParkingApp/Frontend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  telegram-notification:
+    name: Enviar mensaje a Telegram
+    needs: [sonar-java, sonar-nestjs, sonar-frontend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determinar resultado
+        id: resultado
+        run: |
+          if [ "${{ needs.sonar-java.result }}" == "success" ] && [ "${{ needs.sonar-nestjs.result }}" == "success" ] && [ "${{ needs.sonar-frontend.result }}" == "success" ]; then
+            echo "estado=✅ Tests y analisis Sonar OK" >> $GITHUB_OUTPUT
           else
-            EMOJI="❌"
-            STATUS="FALLIDO"
+            echo "estado=❌ Fallaron los tests o el analisis Sonar" >> $GITHUB_OUTPUT
           fi
 
-          MESSAGE="━━━━━━━━━━━━━━━━━━━━
-          🅿️ Sistema de Parqueadero CI/CD
-          ━━━━━━━━━━━━━━━━━━━━
-          Estado: $EMOJI $STATUS
-          Rama: ${{ github.ref_name }}
-          Autor: ${{ github.actor }}
-          Commit: ${{ github.event.head_commit.message }}
-          ─────────────────────
-          Java Tests: $JAVA
-          NestJS Tests: $NESTJS
-          SonarCloud: $SONAR
-          ━━━━━━━━━━━━━━━━━━━━
-          🔗 ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -H "Content-Type: application/json" \
-            -d "{\"chat_id\": \"${{ secrets.TELEGRAM_CHAT_ID }}\", \"text\": \"$MESSAGE\"}"
+      - name: Enviar notificacion a Telegram
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="${{ steps.resultado.outputs.estado }} en Sistema-de-Parqueadero. Rama: ${{ github.ref_name }}. Commit: ${{ github.sha }}"

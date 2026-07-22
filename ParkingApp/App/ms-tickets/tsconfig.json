@@ -2,12 +2,6 @@
   "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
-
-    "types": [
-      "jest",
-      "node"
-    ],
-
     "resolvePackageJsonExports": true,
     "esModuleInterop": true,
     "isolatedModules": true,

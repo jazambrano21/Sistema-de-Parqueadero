@@ -1,4 +1,4 @@
-package ec.edu.espe.usuarios.oauth.config;
+package com.example.oauth_server.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration("oauthSwaggerConfig")
+@Configuration
 @OpenAPIDefinition(
         info = @Info(
                 title = "OAuth Server - Sistema Parqueadero",

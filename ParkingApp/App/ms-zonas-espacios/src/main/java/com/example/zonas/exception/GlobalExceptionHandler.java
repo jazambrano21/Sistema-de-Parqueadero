@@ -57,16 +57,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
-
-        ex.printStackTrace();   // IMPORTANTE
-
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Error interno del servidor")
-                .message(ex.getMessage())      // temporalmente
+                .message("Ocurrió un error al procesar la solicitud")
                 .build();
-
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

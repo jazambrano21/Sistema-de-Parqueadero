@@ -30,12 +30,13 @@ export class VehiculoController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar vehículos', description: 'Retorna todos los vehículos registrados.' })
+  @ApiOperation({ summary: 'Listar vehículos', description: 'Retorna todos los vehículos del tenant actual.' })
   @ApiResponse({ status: 200, description: 'Lista de vehículos retornada exitosamente.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'Requiere ROLE_ADMIN.' })
-  findAll() {
-    return this.vehiculoService.findAll();
+  findAll(@Req() req: Request) {
+    const tenantId = (req as any).user?.tenantId ?? null;
+    return this.vehiculoService.findAll(tenantId);
   }
 
   @Get('placa/:placa')
@@ -44,8 +45,9 @@ export class VehiculoController {
   @ApiResponse({ status: 200, description: 'Vehículo encontrado.' })
   @ApiResponse({ status: 404, description: 'Vehículo no encontrado.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
-  findByPlaca(@Param('placa') placa: string) {
-    return this.vehiculoService.findByPlaca(placa);
+  findByPlaca(@Param('placa') placa: string, @Req() req: Request) {
+    const tenantId = (req as any).user?.tenantId ?? null;
+    return this.vehiculoService.findByPlaca(placa, tenantId);
   }
 
   @Get(':id')
@@ -54,8 +56,9 @@ export class VehiculoController {
   @ApiResponse({ status: 200, description: 'Vehículo encontrado.' })
   @ApiResponse({ status: 404, description: 'Vehículo no encontrado.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
-  findOne(@Param('id') id: string) {
-    return this.vehiculoService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: Request) {
+    const tenantId = (req as any).user?.tenantId ?? null;
+    return this.vehiculoService.findOne(id, tenantId);
   }
 
   @Patch(':id')
@@ -66,8 +69,9 @@ export class VehiculoController {
   @ApiResponse({ status: 404, description: 'Vehículo no encontrado.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'Requiere ROLE_ADMIN.' })
-  update(@Param('id') id: string, @Body() updateVehiculoDto: UpdateVehiculoDto) {
-    return this.vehiculoService.update(id, updateVehiculoDto);
+  update(@Param('id') id: string, @Body() updateVehiculoDto: UpdateVehiculoDto, @Req() req: Request) {
+    const tenantId = (req as any).user?.tenantId ?? null;
+    return this.vehiculoService.update(id, updateVehiculoDto, tenantId);
   }
 
   @Delete(':id')
@@ -77,7 +81,8 @@ export class VehiculoController {
   @ApiResponse({ status: 404, description: 'Vehículo no encontrado.' })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'Requiere ROLE_ADMIN.' })
-  remove(@Param('id') id: string) {
-    return this.vehiculoService.remove(id);
+  remove(@Param('id') id: string, @Req() req: Request) {
+    const tenantId = (req as any).user?.tenantId ?? null;
+    return this.vehiculoService.remove(id, tenantId);
   }
 }

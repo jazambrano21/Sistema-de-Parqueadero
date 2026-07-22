@@ -27,7 +27,7 @@ public class TokenController {
      */
     @PostMapping("/generate")
     public ResponseEntity<TokenResponse> generate(@RequestBody TokenRequest request) {
-        String token = tokenService.generate(request.getUsername(), request.getRoles());
+        String token = tokenService.generate(request.getUsername(), request.getRoles(), request.getTenantId());
         return ResponseEntity.ok(
             new TokenResponse(token, "Bearer", tokenService.getExpirySeconds())
         );

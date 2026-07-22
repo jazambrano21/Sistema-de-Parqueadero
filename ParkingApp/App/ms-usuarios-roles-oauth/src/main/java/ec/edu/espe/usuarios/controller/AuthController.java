@@ -13,9 +13,14 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import ec.edu.espe.usuarios.audit.AuditEventPublisher;
+import jakarta.servlet.http.HttpServletRequest;
+
 
 import java.util.Map;
 
@@ -27,31 +32,35 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
-
+    private final AuditEventPublisher auditEventPublisher;
     /**
-     * Registro de usuario (público).
+     * Registro de usuario administrador (público).
      * POST http://localhost:8082/api/auth/register
-     *
-     * Regla de rol inicial: el PRIMER usuario que se registra en todo el
-     * sistema (cuando todavía no existe ningún ADMIN) queda como ADMIN.
-     * Cualquier registro posterior queda como USER. Esto lo decide
-     * userService.assignInitialRole().
+     * Solo para crear el primer usuario administrador del sistema.
      */
     @Operation(
-            summary = "Registrar nuevo usuario",
-            description = "Crea un nuevo usuario. Si es el primer usuario del sistema (aún no existe ningún ADMIN), " +
-                    "se le asigna ADMIN automáticamente; en caso contrario se le asigna USER. No requiere autenticación previa."
+            summary = "Registrar usuario administrador",
+            description = "Crea un nuevo usuario con rol ADMIN. No requiere autenticación previa. Solo para inicializar el sistema."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Usuario creado exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
     })
+    
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody UserCreateRequest request) {
+        public ResponseEntity<UserResponse> register(@Valid @RequestBody UserCreateRequest request,
+                                                HttpServletRequest httpRequest) {
+
         UserResponse user = userService.createUser(request);
-        UserResponse userWithRole = userService.assignInitialRole(user.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(userWithRole);
-    }
+
+        auditEventPublisher.publish(httpRequest, "USUARIO", "CREATE", Map.of(
+                "id", user.getId(),
+                "username", user.getUsername(),
+                "email", user.getPerson().getEmail()
+        ), "audit.usuario.create");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(user);
+}
 
     /**
      * Login de usuario.
@@ -66,10 +75,20 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Credenciales inválidas"),
             @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
     })
+    
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
-    }
+        public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
+                                                HttpServletRequest httpRequest) {
+
+        LoginResponse response = authService.login(request);
+
+        auditEventPublisher.publish(httpRequest, "USUARIO", "LOGIN", Map.of(
+                "username", response.getUsername(),
+                "roles", response.getRoles()
+        ), "audit.usuario.login");
+
+        return ResponseEntity.ok(response);
+        }
 
     /**
      * Logout — revoca el token antes de que expire.
@@ -86,8 +105,16 @@ public class AuthController {
     })
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout(
-            @RequestHeader("Authorization") String authHeader) {
-        return ResponseEntity.ok(authService.logout(authHeader));
-    }
+        public ResponseEntity<Map<String, String>> logout(
+                @RequestHeader("Authorization") String authHeader,
+                HttpServletRequest httpRequest) {
+
+        Map<String, String> response = authService.logout(authHeader);
+
+        auditEventPublisher.publish(httpRequest, "USUARIO", "LOGOUT", Map.of(
+                "message", "Logout exitoso"
+        ), "audit.usuario.logout");
+
+        return ResponseEntity.ok(response);
+        }
 }

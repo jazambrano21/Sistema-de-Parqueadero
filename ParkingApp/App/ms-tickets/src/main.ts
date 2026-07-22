@@ -1,8 +1,3 @@
-import * as crypto from 'crypto';
-if (!globalThis.crypto) {
-  globalThis.crypto = crypto as any;
-}
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -10,17 +5,24 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // ── Swagger / OpenAPI ──────────────────────────────────────────────
+  app.enableCors();
+
   const config = new DocumentBuilder()
     .setTitle('Tickets API - Sistema Parqueadero')
     .setDescription('Gestión de tickets de entrada/salida del parqueadero')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
-  // ──────────────────────────────────────────────────────────────────
 
-  await app.listen(process.env.PORT ?? 3002);
+  const port = process.env.PORT || 3002;
+
+  await app.listen(port);
+
+  console.log(`MS Tickets escuchando en puerto ${port}`);
+  console.log(`Swagger disponible en http://localhost:${port}/api/docs`);
 }
+
 bootstrap();

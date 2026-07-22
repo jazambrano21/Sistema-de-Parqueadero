@@ -44,7 +44,7 @@ public class Espacio {
     @Column
     private Boolean activo;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_zona")
     private Zona zona;
 
@@ -54,4 +54,11 @@ public class Espacio {
 
     @Column
     private LocalDateTime fechaActualizacion;
+
+    /**
+     * ID del tenant (parqueadero) al que pertenece este espacio.
+     * Se hereda de la zona al crear el espacio.
+     */
+    @Column(name = "tenant_id")
+    private String tenantId;
 }

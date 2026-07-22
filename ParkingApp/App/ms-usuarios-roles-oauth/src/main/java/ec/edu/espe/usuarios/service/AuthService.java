@@ -25,7 +25,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
 
-    @Value("${oauth.server.url:http://localhost:8082}")
+    @Value("${oauth.server.url:http://localhost:9000}")
     private String oauthServerUrl;
 
     /**
@@ -68,10 +68,15 @@ public class AuthService {
 
         log.info("Login exitoso para usuario: {} con roles: {}", user.getUsername(), roles);
 
-        // 4. Pedir token firmado al OAuth server
-        String token = requestTokenFromOAuth(user.getUsername(), roles);
+        // 4. Obtener tenantId del usuario (puede ser null si es SUPERADMIN sin tenant)
+        String tenantId = (user.getTenant() != null)
+                ? user.getTenant().getId().toString()
+                : null;
 
-        // 5. Retornar respuesta completa
+        // 5. Pedir token firmado al OAuth server, incluyendo el tenantId
+        String token = requestTokenFromOAuth(user.getUsername(), roles, tenantId);
+
+        // 6. Retornar respuesta completa
         return LoginResponse.builder()
                 .accessToken(token)
                 .tokenType("Bearer")
@@ -107,7 +112,7 @@ public class AuthService {
             log.warn("No se pudo revocar el token en OAuth server: {}", e.getMessage());
         }
     }
-    private String requestTokenFromOAuth(String username, List<String> roles) {
+    private String requestTokenFromOAuth(String username, List<String> roles, String tenantId) {
         try {
             RestTemplate restTemplate = new RestTemplate();
             String url = oauthServerUrl + "/api/oauth/token/generate";
@@ -115,10 +120,10 @@ public class AuthService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            Map<String, Object> body = Map.of(
-                    "username", username,
-                    "roles", roles
-            );
+            // Incluir tenantId en el body solo si está presente
+            Map<String, Object> body = tenantId != null
+                    ? Map.of("username", username, "roles", roles, "tenantId", tenantId)
+                    : Map.of("username", username, "roles", roles);
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);

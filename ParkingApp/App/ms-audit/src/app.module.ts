@@ -17,7 +17,7 @@ import { EventoAuditoria } from './audit/entities/evento-auditoria.entity';
         host: config.get('DB_HOST') || 'localhost',
         port: +config.get('DB_PORT') || 5432,
         username: config.get('DB_USER') || 'postgres',
-        password: config.get('DB_PASSWORD') || '12345678',
+        password: config.get('DB_PASSWORD') || 'postgres',
         database: config.get('DB_NAME') || 'audit_db',
         entities: [EventoAuditoria],
         synchronize: true,

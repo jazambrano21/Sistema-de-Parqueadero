@@ -2,23 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TicketsController } from './tickets.controller';
 import { TicketsService } from './tickets.service';
 
-const mockService = {
-  create: jest.fn(),
-  findAll: jest.fn().mockResolvedValue([]),
-  findActivos: jest.fn().mockResolvedValue([]),
-  findOne: jest.fn(),
-  cerrarticket: jest.fn(),
-  remove: jest.fn(),
-};
-
 describe('TicketsController', () => {
   let controller: TicketsController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TicketsController],
-      providers: [{ provide: TicketsService, useValue: mockService }],
+      providers: [TicketsService],
     }).compile();
+
     controller = module.get<TicketsController>(TicketsController);
   });
 
