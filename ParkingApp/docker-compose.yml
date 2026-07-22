@@ -242,6 +242,22 @@ services:
       - ms-vehiculos
       - ms-zonas-espacios
 
+  # ─────────────────────────────────────────────────────────────────────────
+  # Frontend React (Vite build → Nginx)
+  # Sirve la SPA en http://localhost:3005
+  # ─────────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: parking-frontend
+    ports:
+      - "3005:80"
+    networks:
+      - parking-network
+    depends_on:
+      - kong
+
 networks:
   parking-network:
     driver: bridge
